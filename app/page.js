@@ -98,6 +98,27 @@ function formatDistance(m) {
   return m < 1000 ? `${m}m` : `${(m / 1000).toFixed(1)}km`;
 }
 
+// ── Open delivery app with deep link, fallback to web URL on mobile ──
+function openDeliveryApp(deepLink, webUrl) {
+  const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+  if (!isMobile) {
+    window.open(webUrl, "_blank", "noreferrer");
+    return;
+  }
+  const start = Date.now();
+  window.location.href = deepLink;
+  const fallbackTimer = setTimeout(() => {
+    if (Date.now() - start < 1500) {
+      window.open(webUrl, "_blank", "noreferrer");
+    }
+  }, 600);
+  const clearFallback = () => clearTimeout(fallbackTimer);
+  window.addEventListener("blur", clearFallback, { once: true });
+  document.addEventListener("visibilitychange", () => {
+    if (document.hidden) clearTimeout(fallbackTimer);
+  }, { once: true });
+}
+
 // ── Suggest dishes using Claude API ──
 async function suggestDishes(restaurantName, restaurantType) {
   try {
@@ -273,7 +294,8 @@ function ResultCard({ restaurant, userLat, userLng, onReroll, onBlacklist }) {
           <div style={{ display: "flex", gap: 8 }}>
             <a
               href={`https://food.grab.com/vn/vi/search?keyword=${encodeURIComponent(restaurant.name)}`}
-              target="_blank" rel="noreferrer"
+              onClick={e => { e.preventDefault(); openDeliveryApp(`grabfood://search?keyword=${encodeURIComponent(restaurant.name)}`, `https://food.grab.com/vn/vi/search?keyword=${encodeURIComponent(restaurant.name)}`); }}
+              rel="noreferrer"
               style={{
                 flex: 1, background: "#0d1a0d", border: "1px solid #00b14f44",
                 color: "#00b14f", padding: "9px",
@@ -709,7 +731,8 @@ export default function LunchSpin() {
                 {i === 0 && (
                   <div style={{ display: "flex", gap: 8 }}>
                     <a href={`https://food.grab.com/vn/vi/search?keyword=${encodeURIComponent(food)}`}
-                      target="_blank" rel="noreferrer"
+                      onClick={e => { e.preventDefault(); openDeliveryApp(`grabfood://search?keyword=${encodeURIComponent(food)}`, `https://food.grab.com/vn/vi/search?keyword=${encodeURIComponent(food)}`); }}
+                      rel="noreferrer"
                       style={{ flex: 1, background: "#0d1a0d", border: "1px solid #00b14f44", color: "#00b14f", padding: "8px", fontSize: 11, fontWeight: 600, textDecoration: "none", display: "flex", alignItems: "center", justifyContent: "center", gap: 5 }}>
                       🟢 GrabFood
                     </a>
