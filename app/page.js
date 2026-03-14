@@ -98,25 +98,17 @@ function formatDistance(m) {
   return m < 1000 ? `${m}m` : `${(m / 1000).toFixed(1)}km`;
 }
 
-// ── Open delivery app with deep link, fallback to web URL on mobile ──
-function openDeliveryApp(deepLink, webUrl) {
+// ── Open delivery app via Universal/App Link on mobile ──
+// Uses the HTTPS URL directly so the OS routes it into the installed app
+// (Grab registers food.grab.com as a Universal Link on iOS / App Link on Android).
+// Falls back gracefully to browser if the app is not installed.
+function openDeliveryApp(_deepLink, webUrl) {
   const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
   if (!isMobile) {
     window.open(webUrl, "_blank", "noreferrer");
     return;
   }
-  const start = Date.now();
-  window.location.href = deepLink;
-  const fallbackTimer = setTimeout(() => {
-    if (Date.now() - start < 1500) {
-      window.open(webUrl, "_blank", "noreferrer");
-    }
-  }, 600);
-  const clearFallback = () => clearTimeout(fallbackTimer);
-  window.addEventListener("blur", clearFallback, { once: true });
-  document.addEventListener("visibilitychange", () => {
-    if (document.hidden) clearTimeout(fallbackTimer);
-  }, { once: true });
+  window.location.href = webUrl;
 }
 
 // ── Suggest dishes using Claude API ──
