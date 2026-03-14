@@ -272,7 +272,7 @@ function ResultCard({ restaurant, userLat, userLng, onReroll, onBlacklist }) {
           {/* Delivery actions */}
           <div style={{ display: "flex", gap: 8 }}>
             <a
-              href={`https://food.grab.com/vn/vi/search?keyword=${encodeURIComponent(restaurant.name)}`}
+              href={`grabfood://search?keyword=${encodeURIComponent(restaurant.name)}`}
               target="_blank" rel="noreferrer"
               style={{
                 flex: 1, background: "#0d1a0d", border: "1px solid #00b14f44",
@@ -284,7 +284,7 @@ function ResultCard({ restaurant, userLat, userLng, onReroll, onBlacklist }) {
               <span style={{ fontSize: 14 }}>🟢</span> GrabFood
             </a>
             <a
-              href={`https://shopeefood.vn/search?keyword=${encodeURIComponent(restaurant.name)}`}
+              href={`shopeefood://search?keyword=${encodeURIComponent(restaurant.name)}`}
               target="_blank" rel="noreferrer"
               style={{
                 flex: 1, background: "#1a0d0a", border: "1px solid #ee4d2d44",
@@ -708,12 +708,12 @@ export default function LunchSpin() {
                 </div>
                 {i === 0 && (
                   <div style={{ display: "flex", gap: 8 }}>
-                    <a href={`https://food.grab.com/vn/vi/search?keyword=${encodeURIComponent(food)}`}
+                    <a href={`grabfood://search?keyword=${encodeURIComponent(food)}`}
                       target="_blank" rel="noreferrer"
                       style={{ flex: 1, background: "#0d1a0d", border: "1px solid #00b14f44", color: "#00b14f", padding: "8px", fontSize: 11, fontWeight: 600, textDecoration: "none", display: "flex", alignItems: "center", justifyContent: "center", gap: 5 }}>
                       🟢 GrabFood
                     </a>
-                    <a href={`https://shopeefood.vn/search?keyword=${encodeURIComponent(food)}`}
+                    <a href={`shopeefood://search?keyword=${encodeURIComponent(food)}`}
                       target="_blank" rel="noreferrer"
                       style={{ flex: 1, background: "#1a0d0a", border: "1px solid #ee4d2d44", color: "#ee4d2d", padding: "8px", fontSize: 11, fontWeight: 600, textDecoration: "none", display: "flex", alignItems: "center", justifyContent: "center", gap: 5 }}>
                       🟠 ShopeeFood
