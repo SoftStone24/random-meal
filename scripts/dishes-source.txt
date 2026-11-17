@@ -1,0 +1,670 @@
+# Source of truth for dishes. Build: node scripts/build-dishes.mjs  ->  app/data/dishes.json
+# Line: name | kind[,kind] | protein[,protein] | meals | [*]
+#   kind    : nuoc com mi banh nuong lau goi vat ngot kho uong
+#   protein : bo heo ga vit ca hs(seafood) tr(egg) chay nt(offal) -(none/other)
+#   meals   : s=sáng t=trưa o=tối k=khuya     "*" at end = rare / hard to find
+# "@origin <id>" sets origin for the lines below.
+
+@origin vn-bac
+Phở bò | nuoc | bo | sto
+Phở gà | nuoc | ga | sto
+Phở cuốn | goi | bo | sto
+Phở xào | mi | bo | sto
+Phở chua Lạng Sơn | mi | heo,vit | to
+Bún chả | mi | heo | t
+Bún thang | nuoc | ga,heo,tr | st
+Bún đậu mắm tôm | mi | heo | to
+Bún riêu cua | nuoc | hs | st
+Bún ốc | nuoc | hs | st
+Bún ngan | nuoc | vit | st
+Bún mọc | nuoc | heo | st
+Bún sườn sụn | nuoc | heo | st
+Bún cá Hải Phòng | nuoc | ca | st
+Bún bung | nuoc | heo | st
+Bún dọc mùng | nuoc | heo | st
+Bún nem nướng | mi | heo | to
+Bún lòng | nuoc | nt | st
+Miến gà | nuoc | ga | st
+Miến lươn | nuoc | ca | st
+Miến ngan | nuoc | vit | st
+Miến xào cua | mi | hs | to
+Miến trộn | mi | heo | t
+Bánh cuốn nóng | banh | heo | s
+Bánh cuốn Thanh Trì | banh | heo | s
+Bánh đúc nóng | banh | heo | st
+Bánh giò | banh | heo | s
+Bánh tẻ | banh | heo | s
+Bánh tôm Hồ Tây | vat | hs | t
+Bánh gối | vat | heo | st
+Bánh mì pate | banh | heo | s
+Bánh mì chảo | banh | tr,bo | s
+Bánh đa cua | nuoc | hs | st
+Bánh đa trộn | mi | heo | t
+Bánh trôi tàu | ngot | - | to
+Cốm | ngot | - | t
+Xôi xéo | com | - | s
+Xôi gà | com | ga | s
+Xôi lạc | com | - | s
+Xôi ngô | com | - | s
+Xôi thịt kho | com | heo | s
+Xôi vò | com | - | s
+Xôi chả | com | heo | s
+Chả cá Lã Vọng | kho | ca | to
+Chả cá nướng | nuong | ca | to
+Chả rươi | kho | hs | to *
+Nem rán | vat | heo | to
+Nem chua rán | vat | heo | to
+Nem chua | vat | heo | to
+Nem lụi | nuong | heo | to
+Nem nướng | nuong | heo | to
+Giò chả | kho | heo | t
+Giò lụa | kho | heo | t
+Thịt đông | kho | heo | t
+Thịt chó | nuong | - | to *
+Thịt trâu gác bếp | kho | - | to *
+Thắng cố | nuoc | - | to *
+Cháo lòng | nuoc | nt | sto
+Cháo sườn | nuoc | heo | s
+Cháo gà | nuoc | ga | sto
+Cháo trai | nuoc | hs | sto
+Cháo đậu xanh | nuoc | - | s
+Cháo ếch Singapore | nuoc | - | to *
+Cơm rang dưa bò | com | bo | to
+Cơm rang thập cẩm | com | heo | t
+Cơm chiên Dương Châu | com | heo,hs | t
+Cơm bình dân | com | heo | t
+Cơm hộp | com | heo | t
+Cơm thố | com | heo | t
+Cơm niêu | com | heo | to
+Cơm cháy chà bông | vat | heo | t
+Cơm cháy kho quẹt | com | heo | to
+Cơm sườn | com | heo | t
+Cơm gà | com | ga | t
+Cơm tấm Hà Nội | com | heo | t
+Cá kho làng Vũ Đại | kho | ca | to
+Cá kho tộ | kho | ca | to
+Thịt kho tàu | kho | heo | to
+Thịt kho tàu trứng | kho | heo,tr | to
+Thịt đông kho | kho | heo | to
+Sườn xào chua ngọt | kho | heo | to
+Sườn rim | kho | heo | to
+Thịt rang cháy cạnh | kho | heo | to
+Thịt luộc | kho | heo | to
+Gà luộc | kho | ga | to
+Gà rang gừng | kho | ga | to
+Gà kho gừng | kho | ga | to
+Gà nướng | nuong | ga | to
+Gà tần thuốc bắc | nuoc | ga | to
+Vịt quay | nuong | vit | to
+Vịt om sấu | kho | vit | to
+Vịt nấu chao | kho | vit | to
+Ngan nướng | nuong | vit | to
+Lòng xào dưa | kho | nt | to
+Lòng lợn luộc | kho | nt | to
+Tiết canh | kho | nt | to *
+Dồi sụn nướng | nuong | nt | to
+Dồi chiên | kho | nt | to
+Trứng chiên | kho | tr | sto
+Trứng đúc thịt | kho | tr,heo | to
+Trứng cuộn | kho | tr | sto
+Đậu phụ sốt cà chua | kho | chay | to
+Đậu phụ rán | kho | chay | to
+Đậu sốt cà chua | kho | chay | to
+Đậu phụ nhồi thịt | kho | chay,heo | to
+Cà tím xào | kho | chay | to
+Rau muống xào tỏi | kho | chay | to
+Rau muống luộc | kho | chay | to
+Canh cua rau đay | nuoc | hs | to
+Canh chua cá | nuoc | ca | to
+Canh bí đỏ | nuoc | - | to
+Canh rau ngót thịt | nuoc | heo | to
+Canh khoai tây | nuoc | heo | to
+Canh mồng tơi | nuoc | - | to
+Canh sườn nấu củ | nuoc | heo | to
+Canh bầu | nuoc | - | to
+Canh mướp | nuoc | - | to
+Lẩu cá kèo | lau | ca | o
+Lẩu gà lá é | lau | ga | o
+Lẩu riêu cua | lau | hs | o
+Lẩu cua đồng | lau | hs | o
+Lẩu ếch | lau | - | o *
+Lẩu chim câu | lau | - | o *
+Lẩu bò nhúng dấm | lau | bo | o
+Lẩu nấm | lau | chay | o
+Lẩu cá tầm | lau | ca | o
+Lẩu dê | lau | - | o
+Lẩu vịt | lau | vit | o
+Lẩu lươn | lau | ca | o
+Lẩu ốc | lau | hs | o
+Lẩu thái | lau | hs | o
+Lẩu thả | lau | hs | o
+Lẩu riêu | lau | hs | o
+Bò nhúng dấm | lau | bo | o
+Bê thui | nuong | - | to
+Dê nướng | nuong | - | to
+Dê tái chanh | goi | - | to
+Chân gà sả tắc | vat | ga | to
+Chân gà rút xương | vat | ga | to
+Ốc luộc | vat | hs | to
+Ốc xào dừa | vat | hs | to
+Ốc nướng | vat | hs | to
+Ốc hấp sả | vat | hs | to
+Ốc nhồi | vat | hs | to
+Bánh tráng trộn | vat | - | to
+Bánh tráng nướng | vat | - | o
+Trà chanh | uong | - | k
+Chè thái | ngot | - | to
+Chè bưởi | ngot | - | to
+Chè hạt sen | ngot | - | to
+Chè trôi nước | ngot | - | to
+Chè đỗ đen | ngot | - | to
+Chè đậu xanh | ngot | - | to
+Chè khúc bạch | ngot | - | to
+Chè sầu | ngot | - | to
+Chè dừa non | ngot | - | to
+Kem tràng tiền | ngot | - | to
+Sữa chua nếp cẩm | ngot | - | to
+Sữa chua mít | ngot | - | to
+Nem cuốn Hà Nội | goi | heo | to
+Gỏi ngó sen | goi | heo,hs | to
+Gỏi bưởi | goi | hs | to
+Gỏi gà | goi | ga | to
+Gỏi xoài | goi | hs | to
+Gỏi sứa | goi | hs | to
+Nộm rau muống | goi | chay | to
+Nộm đu đủ khô bò | goi | bo | to
+Nộm sứa | goi | hs | to
+Nộm hoa chuối | goi | chay | to
+Nộm bò khô | goi | bo | to
+Phở trộn | mi | bo | sto
+Phở sốt vang | nuoc | bo | s
+Bò sốt vang | kho | bo | st
+Bò nấu vang | kho | bo | st
+Bò lúc lắc | kho | bo | to
+Bò xào | kho | bo | to
+Bò nướng lá lốt | nuong | bo | to
+Bò nướng | nuong | bo | to
+Bò tơ Tây Ninh | goi | bo | to
+Bò kho | nuoc | bo | s
+Chả lá lốt | nuong | heo | to
+Chả mực | kho | hs | to
+Chả cá thu | kho | ca | t
+Chả quế | kho | heo | t
+Chả trứng | kho | tr | t
+Đậu hũ chiên giòn | vat | chay | to
+Bánh rán | vat | - | s
+Bánh rán mặn | vat | heo | s
+Bánh tiêu | vat | - | s
+Bánh khoai | vat | - | s
+Bánh gai | vat | - | s
+Bánh dày | vat | - | s
+Bánh chưng | banh | heo | st
+Bánh chưng rán | banh | heo | s
+Bánh nếp | vat | - | s
+Bánh dầy giò | banh | heo | s
+Bánh phu thê | ngot | - | s
+Bánh cốm | ngot | - | s
+Bánh mì nướng | banh | - | s
+Bánh bao | banh | heo | s
+Bánh bao chiên | banh | heo | s
+Bánh bột lọc | banh | hs | t
+Bánh xèo Bắc | banh | hs,heo | to
+Bánh đậu xanh | ngot | - | s
+Kẹo lạc | ngot | - | t
+Kẹo cu đơ | ngot | - | t
+Ô mai | ngot | - | t
+Sấu dầm | ngot | - | t
+Nước sâm | uong | - | t
+Trà đá | uong | - | t
+Cà phê trứng | uong | tr | s *
+Cà phê muối | uong | - | s
+Cà phê sữa đá | uong | - | s
+Nước mía | uong | - | t
+Nước dừa | uong | - | t
+Sinh tố bơ | uong | - | t
+Trà sữa | uong | - | to
+
+@origin vn-trung
+Bún bò Huế | nuoc | bo,heo | st
+Bún thịt nướng Huế | mi | heo | t
+Bún mắm nêm | mi | heo | t
+Bún hến | mi | hs | s
+Bún cá | nuoc | ca | s
+Bún sứa | nuoc | hs | s
+Bún chả Huế | mi | heo | t
+Mì Quảng | mi | heo,hs | st
+Mì Quảng gà | mi | ga | st
+Mì Quảng ếch | mi | - | t
+Mì Quảng cá lóc | mi | ca | st
+Mì Quảng tôm thịt | mi | hs,heo | st
+Cao lầu | mi | heo | t
+Cơm gà Hội An | com | ga | t
+Cơm gà Tam Kỳ | com | ga | t
+Cơm hến | com | hs | st
+Cơm âm phủ | com | hs | t
+Cơm lam | com | - | t
+Bánh canh Huế | nuoc | heo | s
+Bánh canh cá lóc | nuoc | ca | s
+Bánh canh chả cua | nuoc | hs | s
+Bánh bèo | banh | hs | s
+Bánh nậm | banh | heo | s
+Bánh lọc | banh | hs | s
+Bánh ít | banh | hs | s
+Bánh ít lá gai | banh | hs | s
+Bánh khoái | banh | hs | t
+Bánh xèo Quy Nhơn | banh | hs | to
+Bánh xèo tôm nhảy | banh | hs | to
+Bánh tráng cuốn thịt heo | goi | heo | t
+Bánh tráng kẹp | vat | - | to
+Bánh tráng nướng Đà Lạt | vat | tr | o
+Bánh tráng nướng Phan Rang | vat | - | o
+Bánh hỏi | banh | heo | t
+Bánh mì Phượng | banh | heo | s
+Bánh mì bò kho | banh | bo | s
+Bánh mì ốp la | banh | tr | s
+Bánh mì gà | banh | ga | s
+Bánh mì thịt nướng | banh | heo | st
+Bánh mì heo quay | banh | heo | st
+Bánh tai heo | vat | heo | t
+Bánh tét | banh | heo | st
+Bánh bột chiên | banh | tr | to
+Bánh bèo Huế | banh | hs | s
+Cháo hàu | nuoc | hs | s
+Cháo cá lóc | nuoc | ca | s
+Cháo vịt | nuoc | vit | s
+Mực nướng | nuong | hs | to
+Mực hấp gừng | kho | hs | to
+Mực một nắng | nuong | hs | to
+Tôm nướng | nuong | hs | to
+Tôm rang me | kho | hs | to
+Cua rang me | kho | hs | o
+Cua rang muối | kho | hs | o
+Ghẹ hấp | kho | hs | o
+Hàu nướng mỡ hành | nuong | hs | to
+Sò điệp nướng | nuong | hs | to
+Cá kho | kho | ca | to
+Cá lóc nướng trui | nuong | ca | to
+Cá nướng muối ớt | nuong | ca | to
+Cá hấp xì dầu | kho | ca | to
+Cá chiên giòn | kho | ca | to
+Cá sốt cà chua | kho | ca | to
+Cá nục kho | kho | ca | to
+
+@origin vn-nam
+Cơm tấm sườn bì chả | com | heo | st
+Cơm tấm sườn nướng | com | heo | st
+Cơm gà xối mỡ | com | ga | t
+Cơm chiên hải sản | com | hs | t
+Cơm chiên trứng | com | tr | t
+Cơm chiên cá mặn | com | ca | t
+Cơm gà Hải Nam | com | ga | t
+Cơm cháy kho quẹt | com | heo | to
+Hủ tiếu Nam Vang | nuoc | heo,hs | sto
+Hủ tiếu gõ | nuoc | heo | to
+Hủ tiếu Mỹ Tho | nuoc | heo | s
+Hủ tiếu bò kho | nuoc | bo | s
+Hủ tiếu xào | mi | heo,bo | to
+Mì hoành thánh | nuoc | heo,hs | sto
+Mì vịt tiềm | nuoc | vit | to
+Mì xào giòn | mi | heo,hs | to
+Mì cay | nuoc | heo | to
+Mì trộn | mi | heo | to
+Bò kho bánh mì | nuoc | bo | s
+Bún mắm | nuoc | hs,heo | st
+Bún thịt nướng | mi | heo | t
+Bún bò xào | mi | bo | t
+Bún nước lèo | nuoc | hs | s
+Bún suông | nuoc | hs | s
+Bún kèn | nuoc | ca | s
+Bún vịt | nuoc | vit | s
+Bún chả giò | mi | heo | t
+Bún tôm nướng | mi | hs | t
+Bánh canh cua | nuoc | hs | s
+Bánh canh Trảng Bàng | nuoc | heo | s
+Bánh xèo | banh | hs,heo | to
+Bánh xèo miền Tây | banh | hs,heo | to
+Bánh khọt | banh | hs | to
+Bánh cống | banh | hs | to
+Bánh bò | ngot | - | s
+Bánh bò nướng | ngot | - | s
+Bánh da lợn | ngot | - | s
+Bánh flan | ngot | tr | t
+Bánh tằm bì | banh | heo | s
+Bánh tằm cay | banh | heo | s
+Bánh bao nhân thịt | banh | heo | s
+Bánh bột chiên | banh | tr | to
+Bánh hỏi | banh | heo | t
+Bánh ướt | banh | heo | s
+Bánh ướt lòng gà | banh | nt | s
+Bánh cuốn | banh | heo | s
+Bánh ú | banh | heo | s
+Bánh ú nước tro | ngot | - | s
+Bánh tráng trộn | vat | - | to
+Bánh tráng nướng | vat | - | o
+Bánh tráng cuốn thịt heo | goi | heo | t
+Bánh mì thịt nướng | banh | heo | st
+Bánh mì bò kho | banh | bo | s
+Bánh mì ốp la | banh | tr | s
+Bánh mì heo quay | banh | heo | st
+Bánh mì bơ đường | banh | - | s
+Bánh mì nướng bơ tỏi | banh | - | s
+Bánh mì cà ri | banh | ga | s
+Bánh mì gà xé | banh | ga | s
+Bánh mì hột vịt lộn | banh | tr | s
+Hột vịt lộn | vat | tr | o
+Phá lấu | vat | nt | to
+Phá lấu bò | vat | nt | to
+Cá viên chiên | vat | ca | to
+Bò viên | vat | bo | to
+Xiên que | vat | heo | o
+Nem nướng Nha Trang | nuong | heo | to
+Nem nướng Ninh Hòa | nuong | heo | to
+Gỏi cuốn | goi | hs,heo | to
+Gỏi cuốn chay | goi | chay | to
+Gỏi gà | goi | ga | to
+Gỏi bưởi tôm thịt | goi | hs,heo | to
+Gỏi khô bò | goi | bo | to
+Gỏi xoài tôm khô | goi | hs | to
+Chả giò | vat | heo | to
+Chả giò rế | vat | heo | to
+Chả giò chay | vat | chay | to
+Chạo tôm | nuong | hs | to
+Gà nướng muối ớt | nuong | ga | to
+Gà nướng mật ong | nuong | ga | to
+Gà nướng sả | nuong | ga | to
+Gà hấp lá chanh | kho | ga | to
+Gà hấp hành | kho | ga | to
+Gà rô ti | kho | ga | to
+Gà kho sả | kho | ga | to
+Gà xào sả ớt | kho | ga | to
+Gà chiên nước mắm | vat | ga | to
+Vịt nấu chao | kho | vit | to
+Sườn nướng | nuong | heo | to
+Sườn xào chua ngọt | kho | heo | to
+Thịt kho trứng | kho | heo,tr | to
+Thịt kho dừa | kho | heo | to
+Bò né | kho | bo | s
+Cá kho tộ | kho | ca | to
+Cá lóc kho | kho | ca | to
+Cá lóc nướng trui | nuong | ca | to
+
+@origin vn
+Bánh mì heo quay | banh | heo | st
+Bánh mì thập cẩm | banh | heo | s
+Bánh mì chả cá | banh | ca | s
+Bò bít tết | kho | bo | to
+Bánh canh ghẹ | nuoc | hs | s
+Gỏi cuốn tôm thịt | goi | hs,heo | to
+Cơm tấm gà nướng | com | ga | st
+Mì xào bò | mi | bo | to
+Chè | ngot | - | to
+Chè ba màu | ngot | - | to
+Chè chuối | ngot | - | to
+Chè đậu đỏ | ngot | - | to
+Sương sa hạt lựu | ngot | - | to
+Rau câu | ngot | - | to
+Kem | ngot | - | to
+Cà phê | uong | - | s
+Trái cây dầm | ngot | - | to
+Sinh tố | uong | - | t
+Nước ép | uong | - | t
+Sữa đậu nành | uong | - | s
+Cháo trắng heo quẩy | nuoc | heo | s
+Cơm chay | com | chay | t
+Phở chay | nuoc | chay | sto
+Bún chay | nuoc | chay | st
+Mì chay | nuoc | chay | st
+Lẩu chay | lau | chay | o
+Hủ tiếu chay | nuoc | chay | st
+Bánh mì chay | banh | chay | s
+Gỏi chay | goi | chay | to
+
+@origin jp
+Sushi | com | ca,hs | to
+Sashimi | goi | ca,hs | to
+Ramen | nuoc | heo | sto
+Tonkotsu ramen | nuoc | heo | to
+Udon | nuoc | - | t
+Soba | mi | - | t
+Tempura | vat | hs | to
+Tonkatsu | kho | heo | to
+Katsu curry | com | heo | to
+Gyudon | com | bo | t
+Oyakodon | com | ga,tr | t
+Katsudon | com | heo,tr | t
+Unadon | com | ca | to
+Okonomiyaki | banh | heo,hs | to
+Takoyaki | vat | hs | to
+Yakitori | nuong | ga | to
+Yakiniku | nuong | bo | to
+Teppanyaki | nuong | bo,hs | to
+Sukiyaki | lau | bo | to
+Shabu-shabu | lau | bo | to
+Karaage | vat | ga | to
+Gyoza | vat | heo | to
+Onigiri | com | - | sto
+Bento | com | heo | t
+Miso soup | nuoc | - | s
+Chirashi | com | ca | t
+Tamagoyaki | kho | tr | s
+Omurice | com | tr | t
+Yakisoba | mi | heo | t
+Dango | ngot | - | t
+Mochi | ngot | - | t
+Dorayaki | ngot | - | t
+Taiyaki | ngot | - | t
+
+@origin kr
+Kimchi jjigae | nuoc | heo | to
+Bibimbap | com | bo | t
+Kimbap | com | - | t
+Bulgogi | nuong | bo | to
+Galbi | nuong | bo | to
+Samgyeopsal | nuong | heo | to
+Tteokbokki | vat | - | to
+Japchae | mi | bo | t
+Sundubu jjigae | nuoc | hs | to
+Budae jjigae | lau | heo | to
+Samgyetang | nuoc | ga | to
+Jajangmyeon | mi | heo | t
+Jjamppong | nuoc | hs | t
+Naengmyeon | mi | bo | t
+Gà rán Hàn Quốc | vat | ga | to
+Hotteok | ngot | - | t
+Bingsu | ngot | - | to
+Mandu | vat | heo | to
+Haemul pajeon | banh | hs | to
+Ramyeon | nuoc | - | k
+Bossam | nuong | heo | to
+Dakgalbi | kho | ga | to
+Bokkeumbap | com | heo | t
+
+@origin th
+Pad Thai | mi | hs,ga | to
+Tom yum | nuoc | hs | to
+Tom kha gai | nuoc | ga | to
+Green curry | nuoc | ga | to
+Red curry | nuoc | heo | to
+Massaman curry | nuoc | bo | to
+Som tam | goi | hs | to
+Larb | goi | heo | to
+Pad kra pao | com | heo | t
+Khao pad | com | heo | t
+Mango sticky rice | ngot | - | to
+Pad see ew | mi | bo | t
+Boat noodles | nuoc | bo | t
+Khao man gai | com | ga | t
+
+@origin cn
+Dimsum | vat | heo,hs | sto
+Há cảo | vat | hs | sto
+Xíu mại | vat | heo | sto
+Sủi cảo | vat | heo | to
+Hoành thánh | nuoc | heo | to
+Vịt quay Bắc Kinh | nuong | vit | to
+Mapo tofu | kho | heo | to
+Kung pao chicken | kho | ga | to
+Sweet and sour pork | kho | heo | to
+Hot pot Tứ Xuyên | lau | bo | o
+Mì kéo | mi | bo | t
+Mì Lan Châu | nuoc | bo | t
+Xá xíu | nuong | heo | to
+Cơm xá xíu | com | heo | t
+Bánh bao Trung Hoa | banh | heo | s
+Bánh trung thu | ngot | - | t
+Trà sữa trân châu | uong | - | to
+Mì vằn thắn | nuoc | heo,hs | to
+Cháo Quảng Đông | nuoc | heo | s
+Chow mein | mi | heo | t
+
+@origin it
+Pizza Margherita | banh | chay | to
+Pizza pepperoni | banh | heo | to
+Pizza hải sản | banh | hs | to
+Pizza Hawaii | banh | heo | to
+Spaghetti bolognese | mi | bo | to
+Spaghetti carbonara | mi | heo,tr | to
+Spaghetti aglio e olio | mi | chay | to
+Spaghetti hải sản | mi | hs | to
+Lasagna | mi | bo | to
+Ravioli | mi | - | to
+Gnocchi | mi | - | to
+Fettuccine Alfredo | mi | ga | to
+Penne arrabbiata | mi | chay | to
+Risotto | com | - | to
+Tiramisu | ngot | - | to
+Panna cotta | ngot | - | to
+Gelato | ngot | - | to
+Bruschetta | vat | chay | t
+Caprese | goi | chay | t
+Minestrone | nuoc | chay | t
+Calzone | banh | heo | to
+Focaccia | banh | chay | t
+Panini | banh | heo | t
+Mì Ý sốt kem | mi | ga | to
+
+@origin fr
+Bánh mì Pháp | banh | - | s
+Croissant | banh | - | s
+Crêpe | banh | - | st
+Quiche | banh | heo,tr | t
+Ratatouille | kho | chay | to
+Beef bourguignon | kho | bo | to
+Coq au vin | kho | ga | to
+Soupe à l’oignon | nuoc | chay | to
+Escargot | vat | hs | to *
+Foie gras | kho | nt | to *
+Macaron | ngot | - | t
+Crème brûlée | ngot | tr | to
+Pâté | vat | heo | s
+Steak frites | kho | bo | to
+Salade Niçoise | goi | ca | t
+Fondue | lau | chay | o
+
+@origin us
+Hamburger | banh | bo | to
+Cheeseburger | banh | bo | to
+Hot dog | banh | heo | to
+Gà rán | vat | ga | to
+Khoai tây chiên | vat | chay | to
+BBQ ribs | nuong | heo | to
+Steak | kho | bo | to
+Mac and cheese | mi | chay | to
+Club sandwich | banh | ga | t
+Sandwich | banh | heo | st
+Salad gà | goi | ga | t
+Caesar salad | goi | ga | t
+Pancake | banh | - | s
+Waffle | banh | - | s
+Donut | ngot | - | s
+Brownie | ngot | - | t
+Cheesecake | ngot | - | t
+Apple pie | ngot | - | t
+Wrap | banh | ga | t
+Phô mai que | vat | chay | to
+Cánh gà chiên | vat | ga | to
+Nachos | vat | chay | to
+Fish and chips | kho | ca | to
+Sub sandwich | banh | heo | t
+Bagel | banh | - | s
+Poke bowl | com | ca | t
+
+@origin in
+Biryani | com | ga | to
+Butter chicken | nuoc | ga | to
+Naan | banh | - | to
+Samosa | vat | chay | to
+Tandoori chicken | nuong | ga | to
+Chana masala | kho | chay | to
+Palak paneer | kho | chay | to
+Dosa | banh | chay | s
+Roti | banh | - | to
+Paneer tikka | nuong | chay | to
+Dal | nuoc | chay | to
+Gulab jamun | ngot | - | t
+Lassi | uong | - | t
+Masala chai | uong | - | t
+Aloo gobi | kho | chay | to
+Pani puri | vat | chay | t
+Pav bhaji | banh | chay | t
+
+@origin mx
+Taco | banh | bo,heo | to
+Burrito | banh | bo | to
+Quesadilla | banh | ga | to
+Enchilada | banh | ga | to
+Guacamole | vat | chay | to
+Fajitas | nuong | ga,bo | to
+Tamale | banh | heo | s
+Churros | ngot | - | t
+Chili con carne | nuoc | bo | to
+Elote | vat | chay | t
+Tostada | banh | ga | t
+
+@origin me
+Falafel | vat | chay | t
+Hummus | vat | chay | t
+Shawarma | banh | ga,bo | to
+Kebab | nuong | bo,ga | to
+Doner kebab | banh | bo | to
+Shakshuka | kho | tr | s
+Tabbouleh | goi | chay | t
+Baklava | ngot | - | t
+Kofta | nuong | bo | to
+Gyro | banh | heo | to
+Moussaka | kho | bo | to
+Tzatziki | vat | chay | t
+
+@origin eu
+Paella | com | hs | to
+Gazpacho | nuoc | chay | t
+Tapas | vat | heo | to
+Bratwurst | nuong | heo | to
+Schnitzel | kho | heo | to
+Goulash | nuoc | bo | to
+Pierogi | vat | chay | to
+Pelmeni | nuoc | heo | to
+Borscht | nuoc | bo | to
+Beef Stroganoff | kho | bo | to
+
+@origin sea
+Nasi lemak | com | ga | s
+Nasi goreng | com | - | t
+Satay | nuong | ga | to
+Rendang | kho | bo | to
+Laksa | nuoc | hs | t
+Hainanese chicken rice | com | ga | t
+Chili crab | kho | hs | o
+Bak kut teh | nuoc | heo | s
+Roti prata | banh | - | s
+Gado-gado | goi | chay | t
+Mie goreng | mi | - | t
+Char kway teow | mi | hs | to
+Adobo | kho | ga | to
+Sisig | kho | heo | to
+Lechon | nuong | heo | to
+Halo-halo | ngot | - | to
+Bakso | nuoc | bo | t
+Soto ayam | nuoc | ga | t
+Amok | nuoc | ca | to
+Lok lak | kho | bo | to

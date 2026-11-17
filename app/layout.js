@@ -1,26 +1,24 @@
-import { Geist, Geist_Mono } from "next/font/google";
+import { Be_Vietnam_Pro } from "next/font/google";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
+// Be Vietnam Pro covers full Vietnamese diacritics (Geist does not).
+const font = Be_Vietnam_Pro({
+  variable: "--font-ui",
+  subsets: ["vietnamese", "latin"],
+  weight: ["400", "500", "600", "700", "800"],
 });
 
 export const metadata = {
-  title: "Random Meal",
-  };
+  title: "Random Meal — hôm nay ăn gì?",
+  description: "Quay ngẫu nhiên món ăn, lọc theo bữa, vùng và nguyên liệu.",
+};
+
+export const viewport = { themeColor: "#0b0b0e" };
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en">
-      <body className={`${geistSans.variable} ${geistMono.variable}`}>
-        {children}
-      </body>
+    <html lang="vi">
+      <body className={font.variable}>{children}</body>
     </html>
   );
 }

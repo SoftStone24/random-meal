@@ -1,1043 +1,319 @@
 "use client";
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
+import dishes from "./data/dishes.json";
+import {
+  GROUPS, FOREIGN_ORIGINS, EMPTY_FILTERS,
+  filterDishes, activeCount, cycle, pick, kindLabel,
+} from "./lib/filters";
+import styles from "./page.module.css";
 
-const RADII = [{ label: "1km", value: 1000 }, { label: "2km", value: 2000 }, { label: "3km", value: 3000 }, { label: "5km", value: 5000 }];
+const SPIN_MS = 1500;
+const RECENT_KEEP = 5;
+const MEALS = GROUPS.find(g => g.key === "meals");
+const COURSE = GROUPS.find(g => g.key === "course");
+const SHEET_GROUPS = GROUPS.filter(g => g.key !== "meals" && g.key !== "course");
+const ORIGIN_LABEL = Object.fromEntries([
+  ["vn-bac", "Miền Bắc"], ["vn-trung", "Miền Trung"], ["vn-nam", "Miền Nam"], ["vn", "Việt Nam"],
+  ...FOREIGN_ORIGINS,
+]);
 
-// ── Food categories ──
-const FOOD_GROUPS = {
-  "Món nước": ["Phở bò", "Phở gà", "Bún bò Huế", "Bún riêu cua", "Bún thang", "Cháo lòng", "Cháo gà", "Cháo trắng heo quẩy", "Bánh canh", "Hủ tiếu", "Mì quảng", "Bún chả Hà Nội", "Bún thịt nướng", "Bún bò xào", "Bún nem nướng", "Bún cá Nha Trang", "Bún mắm", "Bún kèn", "Bún suông", "Bún đậu mắm tôm", "Lẩu thái hải sản", "Lẩu bò nhúng dấm", "Lẩu gà lá é", "Lẩu nấm", "Lẩu mắm", "Lẩu riêu cua", "Lẩu Thái chua cay", "Lẩu Trung Hoa", "Cháo hải sản"],
-  "Món cơm": ["Cơm tấm sườn bì chả", "Cơm tấm đặc biệt", "Cơm rang dương châu", "Cơm gà xối mỡ", "Cơm sườn", "Cơm chiên cá mặn", "Cơm chiên trứng", "Cơm gà Hội An", "Cơm hến", "Cơm niêu Singapore", "Cơm chiên hải sản", "Cơm Nhật", "Cơm Hàn", "Cơm Thái"],
-  "Món khô": ["Xôi xéo", "Xôi gà", "Xôi lạc", "Xôi ngô", "Xôi chiên phồng", "Bánh mì thịt", "Bánh mì trứng", "Bánh mì pate", "Bánh mì chả cá", "Bánh mì bì", "Bánh mì kẹp thịt nướng", "Bánh cuốn", "Bánh ướt", "Bánh đúc", "Bánh bao", "Bánh tiêu", "Bánh rán", "Bánh xèo", "Bánh khọt", "Bột chiên", "Gỏi cuốn", "Nem cuốn", "Chả giò", "Dimsum", "Gỏi ngó sen", "Gỏi bưởi tôm thịt"],
-  "Món nướng/BBQ": ["Bò nướng lá lốt", "Sườn nướng", "Gà nướng muối ớt", "Mực nướng", "Tôm nướng muối", "Ốc hấp sả", "Ốc len xào dừa", "Hàu nướng mỡ hành", "Cá lóc nướng trui", "Vịt quay", "Gà hấp hành", "Chả cá Lã Vọng", "BBQ Hàn Quốc", "Steak"],
-  "Món nước ngoài": ["Pizza", "Burger", "Mì Ý", "Salad gà", "Sandwich", "Wrap", "Mì ramen", "Phở xào", "Mì xào giòn", "Mì xào mềm", "Hủ tiếu xào"],
-  "Đồ uống": ["Chè"],
-};
-
-// Build FOODS by meal with group info attached
-const ALL_FOODS_WITH_GROUP = Object.entries(FOOD_GROUPS).flatMap(([group, items]) =>
-  items.map(name => ({ name, group }))
-);
-
-const FOODS = {
-  sang: [
-    "Phở bò", "Phở gà", "Bún bò Huế", "Bún riêu cua", "Bún thang",
-    "Cháo lòng", "Cháo gà", "Cháo trắng heo quẩy", "Xôi xéo", "Xôi gà",
-    "Xôi lạc", "Xôi ngô", "Bánh mì thịt", "Bánh mì trứng", "Bánh mì pate",
-    "Bánh cuốn", "Bánh ướt", "Bánh canh", "Hủ tiếu", "Mì quảng",
-    "Bánh đúc", "Cơm tấm sườn bì chả", "Bún đậu mắm tôm", "Bột chiên",
-    "Bánh bao", "Xôi chiên phồng", "Bánh tiêu", "Bánh rán", "Chè",
-  ],
-  trua: [
-    "Cơm tấm đặc biệt", "Cơm rang dương châu", "Cơm gà xối mỡ", "Cơm sườn",
-    "Bún chả Hà Nội", "Bún thịt nướng", "Bún bò xào", "Bún nem nướng",
-    "Phở xào", "Mì xào giòn", "Mì xào mềm", "Hủ tiếu xào",
-    "Bánh mì chả cá", "Bánh mì bì", "Bánh mì kẹp thịt nướng",
-    "Cơm chiên cá mặn", "Cơm chiên trứng", "Cơm gà Hội An",
-    "Bún cá Nha Trang", "Bún mắm", "Bún kèn", "Bún suông",
-    "Cơm hến", "Bánh xèo", "Bánh khọt",
-    "Pizza", "Burger", "Mì Ý", "Cơm Nhật", "Cơm Hàn",
-    "Salad gà", "Sandwich", "Wrap", "Cơm Thái", "Mì ramen",
-    "Gỏi cuốn", "Nem cuốn", "Chả giò",
-  ],
-  toi: [
-    "Lẩu thái hải sản", "Lẩu bò nhúng dấm", "Lẩu gà lá é", "Lẩu nấm",
-    "Lẩu mắm", "Lẩu riêu cua", "Lẩu Thái chua cay",
-    "Bò nướng lá lốt", "Sườn nướng", "Gà nướng muối ớt", "Mực nướng",
-    "Tôm nướng muối", "Ốc hấp sả", "Ốc len xào dừa", "Hàu nướng mỡ hành",
-    "Bún đậu mắm tôm", "Bún bò Huế", "Cháo hải sản",
-    "Cơm niêu Singapore", "Cơm chiên hải sản",
-    "Steak", "BBQ Hàn Quốc", "Lẩu Trung Hoa", "Dimsum",
-    "Cá lóc nướng trui", "Vịt quay", "Gà hấp hành",
-    "Gỏi ngó sen", "Gỏi bưởi tôm thịt", "Chả cá Lã Vọng",
-  ],
-};
-
-const MEAL_LABELS = { sang: "🌅 Sáng", trua: "☀️ Trưa", toi: "🌙 Tối" };
-
-// Helper — get group of a food item
-function getFoodGroup(name) {
-  for (const [group, items] of Object.entries(FOOD_GROUPS)) {
-    if (items.includes(name)) return group;
-  }
-  return "Khác";
+// State saved in localStorage (loaded after mount to avoid hydration mismatch)
+function usePersistedState(key, initial) {
+  const [value, setValue] = useState(initial);
+  const loaded = useRef(false);
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem("random-meal:" + key);
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- load after mount to avoid hydration mismatch
+      if (raw !== null) setValue(JSON.parse(raw));
+    } catch {}
+    loaded.current = true;
+  }, [key]);
+  useEffect(() => {
+    if (!loaded.current) return;
+    try { localStorage.setItem("random-meal:" + key, JSON.stringify(value)); } catch {}
+  }, [key, value]);
+  return [value, setValue];
 }
 
-// ── Fetch nearby restaurants via our API route ──
-async function fetchNearbyRestaurants(lat, lng, radius) {
-  const res = await fetch(`/api/places?lat=${lat}&lng=${lng}&radius=${radius}`);
-  const data = await res.json();
-  if (data.status !== "OK" && data.status !== "ZERO_RESULTS") throw new Error(data.status);
-  return (data.results || []).map(p => ({
-    id: p.place_id,
-    name: p.name,
-    type: p.types?.slice(0, 2).map(t => t.replace(/_/g, " ")).join(" · ") || "Nhà hàng",
-    rating: p.rating || 4.0,
-    reviews: p.user_ratings_total || 0,
-    address: p.vicinity || "",
-    photo: p.photos?.[0]
-      ? `/api/places?type=photo&url=${encodeURIComponent(p.photos[0].photo_reference)}`
-      : null,
-    lat: p.geometry.location.lat,
-    lng: p.geometry.location.lng,
-    dishes: [],
-    priceLevel: p.price_level,
-    openNow: p.opening_hours?.open_now,
-  }));
-}
-
-// ── Get distance between two coords (meters) ──
-function getDistance(lat1, lng1, lat2, lng2) {
-  const R = 6371000;
-  const dLat = (lat2 - lat1) * Math.PI / 180;
-  const dLng = (lng2 - lng1) * Math.PI / 180;
-  const a = Math.sin(dLat / 2) ** 2 + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLng / 2) ** 2;
-  return Math.round(R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
-}
-
-function formatDistance(m) {
-  return m < 1000 ? `${m}m` : `${(m / 1000).toFixed(1)}km`;
-}
-
-// ── Suggest dishes using Claude API ──
-async function suggestDishes(restaurantName, restaurantType) {
-  try {
-    const res = await fetch("https://api.anthropic.com/v1/messages", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        model: "claude-sonnet-4-20250514",
-        max_tokens: 200,
-        messages: [{
-          role: "user",
-          content: `Quán ăn tên "${restaurantName}", loại: "${restaurantType}". Gợi ý đúng 3 món ăn tiêu biểu ngắn gọn. Trả lời JSON array, ví dụ: ["Phở bò tái", "Phở gà", "Bún bò"]. Chỉ JSON, không giải thích.`
-        }]
-      })
-    });
-    const data = await res.json();
-    const text = data.content?.[0]?.text || "[]";
-    const clean = text.replace(/```json|```/g, "").trim();
-    return JSON.parse(clean);
-  } catch {
-    return ["Món đặc biệt", "Món theo ngày", "Hỏi nhân viên"];
-  }
-}
-
-function StarRating({ rating }) {
+function Chip({ label, state, onClick }) {
+  const cls = state === "inc" ? styles.inc : state === "exc" ? styles.exc : "";
+  const status = state === "inc" ? ", đang chọn" : state === "exc" ? ", đang loại" : "";
   return (
-    <span>
-      <span style={{ color: "#ffd54f", fontSize: 12 }}>{"★".repeat(Math.floor(rating))}{"☆".repeat(5 - Math.floor(rating))}</span>
-      <span style={{ color: "#666", fontSize: 11, marginLeft: 5 }}>{rating} ({(Math.random() * 900 + 100).toFixed(0)} đánh giá)</span>
-    </span>
+    <button type="button" className={`${styles.chip} ${cls}`} onClick={onClick} aria-label={label + status}>
+      {state === "inc" ? "✓ " : state === "exc" ? "✕ " : ""}{label}
+    </button>
   );
 }
 
-function PriceLevel({ level }) {
-  if (!level) return null;
-  const labels = ["", "Bình dân", "Trung bình", "Cao cấp", "Sang trọng"];
-  const colors = ["", "#4caf50", "#f97316", "#e94560", "#a78bfa"];
-  return <span style={{ fontSize: 10, color: colors[level], background: colors[level] + "18", padding: "2px 8px", border: `1px solid ${colors[level]}33` }}>{labels[level]}</span>;
+function meta(d) {
+  return [kindLabel(d), ORIGIN_LABEL[d.origin], d.rare ? "ít gặp" : null].filter(Boolean).join(" · ");
 }
 
-function SlotMachine({ spinning, result, allRestaurants }) {
-  const [displayName, setDisplayName] = useState("???");
-  const intervalRef = useRef(null);
+function FilterSheet({ onClose, children, title }) {
+  const ref = useRef(null);
+  const closeRef = useRef(onClose);
+  useEffect(() => { closeRef.current = onClose; });
   useEffect(() => {
-    if (spinning && allRestaurants.length > 0) {
-      let i = 0;
-      intervalRef.current = setInterval(() => {
-        setDisplayName(allRestaurants[i % allRestaurants.length].name);
-        i++;
-      }, 80);
-    } else {
-      clearInterval(intervalRef.current);
-      setDisplayName(result ? result.name : "???");
-    }
-    return () => clearInterval(intervalRef.current);
-  }, [spinning, result, allRestaurants]);
-
+    const prevFocus = document.activeElement;
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    ref.current?.focus();
+    const onKey = e => e.key === "Escape" && closeRef.current();
+    window.addEventListener("keydown", onKey);
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      document.body.style.overflow = prevOverflow;
+      prevFocus?.focus?.();
+    };
+  }, []);
   return (
-    <div style={{
-      fontFamily: "'Be Vietnam Pro', sans-serif",
-      fontSize: spinning ? 22 : 30, fontWeight: 800,
-      color: spinning ? "#444" : "#fff",
-      letterSpacing: "-0.5px", transition: "all 0.3s",
-      minHeight: 48, display: "flex", alignItems: "center", justifyContent: "center",
-      textAlign: "center", padding: "0 20px", lineHeight: 1.2
-    }}>{displayName}</div>
-  );
-}
-
-function ResultCard({ restaurant, userLat, userLng, onReroll, onBlacklist }) {
-  const [visible, setVisible] = useState(false);
-  const [dishes, setDishes] = useState(restaurant.dishes);
-  const [loadingDishes, setLoadingDishes] = useState(false);
-
-  useEffect(() => {
-    setTimeout(() => setVisible(true), 50);
-    if (!restaurant.dishes?.length) {
-      setLoadingDishes(true);
-      suggestDishes(restaurant.name, restaurant.type).then(d => {
-        setDishes(d);
-        setLoadingDishes(false);
-      });
-    }
-  }, [restaurant]);
-
-  const distance = userLat && restaurant.lat
-    ? formatDistance(getDistance(userLat, userLng, restaurant.lat, restaurant.lng))
-    : restaurant.distance || "";
-
-  const mapsUrl = `https://maps.google.com/?q=${encodeURIComponent(restaurant.name + " " + restaurant.address)}`;
-
-  return (
-    <div style={{
-      opacity: visible ? 1 : 0, transform: visible ? "translateY(0)" : "translateY(24px)",
-      transition: "all 0.4s ease", width: "100%", maxWidth: 480
-    }}>
-      {/* Photo */}
-      <div style={{ position: "relative", overflow: "hidden", height: 220, background: "#111" }}>
-        {restaurant.photo
-          ? <img src={restaurant.photo} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} onError={e => { e.target.style.display = "none"; }} />
-          : <div style={{ width: "100%", height: "100%", background: "#111115", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 40 }}>🍜</div>
-        }
-        <div style={{ position: "absolute", inset: 0, background: "linear-gradient(transparent 35%, rgba(0,0,0,0.92))" }} />
-
-        {/* Open now badge */}
-        {restaurant.openNow !== undefined && (
-          <div style={{ position: "absolute", top: 12, left: 12, background: restaurant.openNow ? "#1a3a1a" : "#3a1a1a", border: `1px solid ${restaurant.openNow ? "#4caf50" : "#e94560"}44`, padding: "3px 10px", fontSize: 9, color: restaurant.openNow ? "#4caf50" : "#e94560", letterSpacing: "0.15em", textTransform: "uppercase" }}>
-            {restaurant.openNow ? "● Đang mở" : "● Đã đóng"}
-          </div>
-        )}
-
-        <div style={{ position: "absolute", top: 12, right: 12, background: "rgba(0,0,0,0.7)", padding: "4px 10px", backdropFilter: "blur(4px)" }}>
-          <StarRating rating={restaurant.rating} />
-        </div>
-
-        <div style={{ position: "absolute", bottom: 16, left: 20, right: 20 }}>
-          <div style={{ fontFamily: "'Be Vietnam Pro', sans-serif", fontSize: 22, fontWeight: 800, color: "#fff", marginBottom: 6, lineHeight: 1.2 }}>{restaurant.name}</div>
-          <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-            <span style={{ fontSize: 10, color: "#aaa", textTransform: "uppercase", letterSpacing: "0.08em" }}>{restaurant.type}</span>
-            <PriceLevel level={restaurant.priceLevel} />
-          </div>
-        </div>
-      </div>
-
-      {/* Info */}
-      <div style={{ background: "#111115", border: "1px solid #1e1e24", borderTop: "none", padding: "16px 20px" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 16 }}>
-          <div style={{ fontSize: 12, color: "#555", flex: 1, marginRight: 12, lineHeight: 1.5 }}>📍 {restaurant.address}</div>
-          <div style={{ fontSize: 13, color: "#f97316", fontWeight: 700, flexShrink: 0 }}>{distance}</div>
-        </div>
-
-        {/* Dishes */}
-        <div style={{ marginBottom: 18 }}>
-          <div style={{ fontSize: 9, color: "#444", letterSpacing: "0.2em", textTransform: "uppercase", marginBottom: 10 }}>
-            🍽 Gợi ý món hôm nay
-          </div>
-          {loadingDishes ? (
-            <div style={{ fontSize: 11, color: "#333", fontStyle: "italic" }}>Đang gợi ý món...</div>
-          ) : (
-            <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
-              {(dishes?.length ? dishes : ["Món đặc biệt", "Hỏi nhân viên", "Theo ngày"]).map((dish, i) => (
-                <div key={i} style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                  <div style={{
-                    width: 22, height: 22, borderRadius: "50%",
-                    background: i === 0 ? "#e94560" : "#1a1a1e",
-                    border: i === 0 ? "none" : "1px solid #2a2a2e",
-                    display: "flex", alignItems: "center", justifyContent: "center",
-                    fontSize: 9, color: i === 0 ? "#fff" : "#444", fontWeight: 700, flexShrink: 0
-                  }}>{i + 1}</div>
-                  <span style={{ fontSize: 13, color: i === 0 ? "#fff" : "#888", fontFamily: "'Be Vietnam Pro', sans-serif" }}>{dish}</span>
-                  {i === 0 && <span style={{ fontSize: 8, color: "#e94560", letterSpacing: "0.15em", textTransform: "uppercase", border: "1px solid #e9456033", padding: "1px 6px" }}>gợi ý</span>}
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Actions */}
-        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-          {/* Primary actions */}
-          <div style={{ display: "flex", gap: 8 }}>
-            <a href={mapsUrl} target="_blank" rel="noreferrer" style={{
-              flex: 2, background: "#e94560", color: "#fff", padding: "11px",
-              fontSize: 12, fontFamily: "'Be Vietnam Pro', sans-serif", fontWeight: 700,
-              cursor: "pointer", letterSpacing: "0.05em", textDecoration: "none",
-              display: "flex", alignItems: "center", justifyContent: "center", gap: 6
-            }}>🗺 Đi thôi!</a>
-            <button onClick={onReroll} style={{ flex: 1, background: "transparent", border: "1px solid #2a2a2e", color: "#888", padding: "11px", fontSize: 11, fontFamily: "'Be Vietnam Pro', sans-serif", cursor: "pointer" }}>↺ Khác</button>
-            <button onClick={() => onBlacklist(restaurant)} style={{ flex: 1, background: "transparent", border: "1px solid #2a2a2e", color: "#555", padding: "11px", fontSize: 11, fontFamily: "'Be Vietnam Pro', sans-serif", cursor: "pointer" }}>✕ Bỏ</button>
-          </div>
-
-          {/* Delivery actions */}
-          <div style={{ display: "flex", gap: 8 }}>
-            <a
-              href={`https://food.grab.com/vn/vi/search?keyword=${encodeURIComponent(restaurant.name)}`}
-              target="_blank" rel="noreferrer"
-              style={{
-                flex: 1, background: "#0d1a0d", border: "1px solid #00b14f44",
-                color: "#00b14f", padding: "9px",
-                fontSize: 11, fontFamily: "'Be Vietnam Pro', sans-serif", fontWeight: 600,
-                textDecoration: "none", display: "flex", alignItems: "center",
-                justifyContent: "center", gap: 6, cursor: "pointer"
-              }}>
-              <span style={{ fontSize: 14 }}>🟢</span> GrabFood
-            </a>
-            <a
-              href={`https://shopeefood.vn/search?keyword=${encodeURIComponent(restaurant.name)}`}
-              target="_blank" rel="noreferrer"
-              style={{
-                flex: 1, background: "#1a0d0a", border: "1px solid #ee4d2d44",
-                color: "#ee4d2d", padding: "9px",
-                fontSize: 11, fontFamily: "'Be Vietnam Pro', sans-serif", fontWeight: 600,
-                textDecoration: "none", display: "flex", alignItems: "center",
-                justifyContent: "center", gap: 6, cursor: "pointer"
-              }}>
-              <span style={{ fontSize: 14 }}>🟠</span> ShopeeFood
-            </a>
-          </div>
-
-          {/* Delivery note */}
-          <div style={{ fontSize: 9, color: "#2a2a2e", textAlign: "center", letterSpacing: "0.05em" }}>
-            Nhấn để tìm quán trên app giao hàng — kết quả tuỳ theo app
-          </div>
-        </div>
+    <div className={styles.scrim} onClick={e => e.target === e.currentTarget && onClose()}>
+      <div className={styles.sheet} role="dialog" aria-modal="true" aria-label={title} tabIndex={-1} ref={ref}>
+        {children}
       </div>
     </div>
   );
 }
 
-export default function LunchSpin() {
-  const [restaurants, setRestaurants] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-  const [userLat, setUserLat] = useState(null);
-  const [userLng, setUserLng] = useState(null);
-  const [areaLabel, setAreaLabel] = useState("");
-  const [radius, setRadius] = useState(2000);
+export default function Home() {
+  const [storedFilters, setFilters] = usePersistedState("filters", EMPTY_FILTERS);
+  // merge so filters saved before a group existed still work
+  const filters = useMemo(() => ({ ...EMPTY_FILTERS, ...storedFilters }), [storedFilters]);
+  const [showForeign, setShowForeign] = usePersistedState("showForeign", false);
+  const [blocked, setBlocked] = usePersistedState("blocked", []);
+  const [recent, setRecent] = usePersistedState("recent", []);
+  const [avoidRecent, setAvoidRecent] = usePersistedState("avoidRecent", true);
+  const [sheetOpen, setSheetOpen] = useState(false);
+  const [query, setQuery] = useState("");
+
   const [spinning, setSpinning] = useState(false);
-  const [result, setResult] = useState(null);
-  const [activeTab, setActiveTab] = useState("quan");
+  const [display, setDisplay] = useState(null);
+  const [current, setCurrent] = useState(null);
+  const [alts, setAlts] = useState([]);
+  const timers = useRef({ iv: null, to: null });
 
-  // Food tab state
-  const [selectedMeal, setSelectedMeal] = useState("trua");
-  const [foodSpinning, setFoodSpinning] = useState(false);
-  const [foodResult, setFoodResult] = useState(null);
-  const [foodDisplay, setFoodDisplay] = useState("???");
-  const [showFoodFilter, setShowFoodFilter] = useState(false);
-  const [blockedFoodGroups, setBlockedFoodGroups] = useState([]);
-  const [blockedFoods, setBlockedFoods] = useState([]);
-  const foodIntervalRef = useRef(null);
+  const pool = useMemo(
+    () => filterDishes(dishes, { filters, showForeign, blocked }),
+    [filters, showForeign, blocked],
+  );
+  const activeFilters = activeCount(filters) + (showForeign ? 1 : 0);
+  const noneLeft = pool.length === 0;
 
-  // Available foods after filter
-  const availableFoods = FOODS[selectedMeal].filter(f => {
-    if (blockedFoods.includes(f)) return false;
-    if (blockedFoodGroups.includes(getFoodGroup(f))) return false;
-    return true;
-  });
-  const [blacklist, setBlacklist] = useState([]);
-  const [history, setHistory] = useState([]);
-  const [showSettings, setShowSettings] = useState(false);
-  const [showHistory, setShowHistory] = useState(false);
-  const [showBlacklist, setShowBlacklist] = useState(false);
-  const [showFilter, setShowFilter] = useState(false);
-  const [blockedTypes, setBlockedTypes] = useState([]);
-  const [manualRestaurants, setManualRestaurants] = useState([]);
-  const [showAddManual, setShowAddManual] = useState(false);
-  const [manualName, setManualName] = useState("");
-  const [manualAddress, setManualAddress] = useState("");
-  const [manualType, setManualType] = useState("Quán ăn");
-  const [customAddress, setCustomAddress] = useState("");
-  const [geocoding, setGeocoding] = useState(false);
+  useEffect(() => () => { clearInterval(timers.current.iv); clearTimeout(timers.current.to); }, []);
 
-  // Combine API + manual restaurants
-  const allRestaurants = [...restaurants, ...manualRestaurants];
-
-  // Extract unique cuisine types — split by · and deduplicate
-  const allTypes = [...new Set(
-    allRestaurants.flatMap(r =>
-      r.type.split(" · ").map(t => t.trim().toLowerCase()).filter(t => t.length > 1 && t.length < 30)
-    )
-  )].sort();
-
-  const available = allRestaurants.filter(r => {
-    if (blacklist.includes(r.id)) return false;
-    const rTypes = r.type.split(" · ").map(t => t.trim());
-    if (rTypes.some(t => blockedTypes.includes(t))) return false;
-    return true;
-  });
-
-  const handleAddManual = () => {
-    if (!manualName.trim()) return;
-    const newR = {
-      id: `manual-${Date.now()}`,
-      name: manualName.trim(),
-      address: manualAddress.trim() || "Địa chỉ chưa nhập",
-      type: manualType,
-      rating: null,
-      photo: null,
-      lat: null, lng: null,
-      dishes: [], priceLevel: null, openNow: true,
-      isManual: true,
-    };
-    setManualRestaurants(prev => [...prev, newR]);
-    setManualName(""); setManualAddress(""); setManualType("Quán ăn");
-    setShowAddManual(false);
-  };
-
-  // ── Load restaurants from Google Places ──
-  const loadRestaurants = useCallback(async (lat, lng, r) => {
-    setLoading(true); setError(""); setResult(null);
-    try {
-      const data = await fetchNearbyRestaurants(lat, lng, r);
-      setRestaurants(data);
-    } catch (e) {
-      setError("Không thể tải dữ liệu quán ăn. Kiểm tra API key.");
+  function spin() {
+    if (spinning || noneLeft) return;
+    let candidates = pool;
+    if (avoidRecent) {
+      const fresh = pool.filter(d => !recent.includes(d.name));
+      if (fresh.length >= 3) candidates = fresh;
     }
-    setLoading(false);
-  }, []);
-
-  // ── Get current location ──
-  const getLocation = () => {
-    if (!navigator.geolocation) { setError("Trình duyệt không hỗ trợ GPS."); return; }
-    setLoading(true);
-    navigator.geolocation.getCurrentPosition(
-      pos => {
-        const { latitude: lat, longitude: lng } = pos.coords;
-        setUserLat(lat); setUserLng(lng);
-        setAreaLabel("Vị trí hiện tại");
-        loadRestaurants(lat, lng, radius);
-      },
-      () => { setError("Không lấy được vị trí. Hãy nhập địa chỉ."); setLoading(false); }
-    );
-  };
-
-  // ── Geocode custom address ──
-  const geocodeAddress = async () => {
-    if (!customAddress.trim()) return;
-    setGeocoding(true);
-    try {
-      const res = await fetch(`/api/places?type=geocode&address=${encodeURIComponent(customAddress)}`);
-      const data = await res.json();
-      if (data.results?.length) {
-        const { lat, lng } = data.results[0].geometry.location;
-        setUserLat(lat); setUserLng(lng);
-        setAreaLabel(customAddress);
-        setCustomAddress("");
-        setShowSettings(false);
-        loadRestaurants(lat, lng, radius);
-      } else {
-        setError("Không tìm thấy địa chỉ này.");
-      }
-    } catch { setError("Lỗi tìm kiếm địa chỉ."); }
-    setGeocoding(false);
-  };
-
-  // ── Auto get location on first load ──
-  useEffect(() => { getLocation(); }, []);
-
-  const handleSpin = () => {
-    if (spinning || available.length === 0) return;
-    setResult(null);
+    const picks = pick(candidates, 3);
+    const reduce = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+    setCurrent(null);
+    setAlts([]);
     setSpinning(true);
-    setTimeout(() => {
-      const shuffled = [...available].sort(() => Math.random() - 0.5);
-      const picks = shuffled.slice(0, Math.min(3, shuffled.length));
+    if (!reduce) {
+      timers.current.iv = setInterval(() => {
+        setDisplay(pool[Math.floor(Math.random() * pool.length)].name);
+      }, 70);
+    }
+    timers.current.to = setTimeout(() => {
+      clearInterval(timers.current.iv);
+      setCurrent(picks[0]);
+      setAlts(picks.slice(1));
+      setRecent(prev => [picks[0].name, ...prev.filter(n => n !== picks[0].name)].slice(0, RECENT_KEEP));
       setSpinning(false);
-      setResult(picks);
-      picks.forEach(pick => setHistory(prev => [{ ...pick, time: new Date().toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" }) }, ...prev.slice(0, 9)]));
-    }, 2200);
-  };
+    }, reduce ? 0 : SPIN_MS);
+  }
 
-  const handleBlacklist = (r) => {
-    setBlacklist(prev => [...prev, r.id]);
-    setResult(prev => prev ? prev.filter(x => x.id !== r.id) : null);
-  };
+  function promote(d) {
+    setAlts(prev => [current, ...prev.filter(x => x.name !== d.name)].filter(Boolean));
+    setCurrent(d);
+  }
 
-  // ── Food spin ──
-  const handleFoodSpin = () => {
-    if (foodSpinning || availableFoods.length === 0) return;
-    setFoodResult(null);
-    setFoodSpinning(true);
-    let i = 0;
-    foodIntervalRef.current = setInterval(() => {
-      setFoodDisplay(availableFoods[i % availableFoods.length]);
-      i++;
-    }, 80);
-    setTimeout(() => {
-      clearInterval(foodIntervalRef.current);
-      const shuffled = [...availableFoods].sort(() => Math.random() - 0.5);
-      const picks = shuffled.slice(0, 3);
-      setFoodDisplay(picks[0]);
-      setFoodResult(picks);
-      setFoodSpinning(false);
-    }, 2200);
-  };
+  function blockDish(d) {
+    setBlocked(prev => (prev.includes(d.name) ? prev : [...prev, d.name]));
+    if (current?.name === d.name) {
+      setCurrent(alts[0] ?? null);
+      setAlts(alts.slice(1));
+    } else {
+      setAlts(prev => prev.filter(x => x.name !== d.name));
+    }
+  }
+
+  const stateOf = (key, v) => (filters[key].inc.includes(v) ? "inc" : filters[key].exc.includes(v) ? "exc" : "off");
+  const toggle = (key, v) => setFilters(f => {
+    const base = { ...EMPTY_FILTERS, ...f };
+    return { ...base, [key]: cycle(base[key], v) };
+  });
+  const clearFilters = () => { setFilters(EMPTY_FILTERS); setShowForeign(false); };
+  const closeSheet = () => setSheetOpen(false);
+
+  const matches = query.trim()
+    ? dishes.filter(d => d.name.toLowerCase().includes(query.trim().toLowerCase())).slice(0, 8)
+    : [];
 
   return (
-    <div style={{ minHeight: "100vh", background: "#08080a", fontFamily: "'Be Vietnam Pro', sans-serif", color: "#e8e8e8", display: "flex", flexDirection: "column" }}>
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&family=Syne:wght@700;800;900&display=swap');
-        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Be Vietnam Pro', sans-serif; }
-        button, input, a { font-family: 'Be Vietnam Pro', sans-serif !important; }
-        ::-webkit-scrollbar { width: 3px; background: #08080a; }
-        ::-webkit-scrollbar-thumb { background: #222; }
-        @keyframes pulse { 0%,100%{opacity:1}50%{opacity:0.3} }
-        @keyframes slideUp { from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:none} }
-        @keyframes fadeIn { from{opacity:0}to{opacity:1} }
-        .btn:hover { opacity: 0.8; }
-      `}</style>
-
-      {/* HEADER */}
-      <header style={{ padding: "18px 28px", borderBottom: "1px solid #111" }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
-          <div>
-            <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 22, fontWeight: 900, letterSpacing: "-0.5px" }}>
-              LUNCH<span style={{ color: "#e94560" }}>.</span>SPIN
-            </div>
-            <div style={{ fontSize: 10, color: "#333", letterSpacing: "0.15em", marginTop: 1 }}>hôm nay ăn gì?</div>
-          </div>
-          <div style={{ display: "flex", gap: 6 }}>
-            {activeTab === "quan" && [
-              { label: `Danh Sách Bỏ Qua${(blockedTypes.length + blacklist.length) > 0 ? ` (${blockedTypes.length + blacklist.length})` : ""}`, action: () => { setShowFilter(true); setShowHistory(false); setShowSettings(false); } },
-              { label: `Lịch sử${history.length ? ` (${history.length})` : ""}`, action: () => { setShowHistory(true); setShowSettings(false); setShowFilter(false); } },
-              { label: "⚙", action: () => { setShowSettings(true); setShowHistory(false); setShowFilter(false); } },
-            ].map(b => (
-              <button key={b.label} className="btn" onClick={b.action} style={{ background: "none", border: "1px solid #1e1e24", color: "#555", padding: "6px 12px", fontSize: 10, cursor: "pointer" }}>{b.label}</button>
-            ))}
-            {activeTab === "mon" && (
-              <button className="btn" onClick={() => setShowFoodFilter(true)} style={{
-                background: (blockedFoodGroups.length + blockedFoods.length) > 0 ? "#1a0a0e" : "none",
-                border: (blockedFoodGroups.length + blockedFoods.length) > 0 ? "1px solid #e9456044" : "1px solid #1e1e24",
-                color: (blockedFoodGroups.length + blockedFoods.length) > 0 ? "#e94560" : "#555",
-                padding: "6px 12px", fontSize: 10, cursor: "pointer"
-              }}>
-                🚫 Bỏ Qua{(blockedFoodGroups.length + blockedFoods.length) > 0 ? ` (${blockedFoodGroups.length + blockedFoods.length})` : ""}
-              </button>
-            )}
-          </div>
-        </div>
-
-        {/* TABS */}
-        <div style={{ display: "flex", gap: 0, borderBottom: "1px solid #1a1a1e" }}>
-          {[
-            { key: "quan", label: "🏪 Random Quán Ăn" },
-            { key: "mon", label: "🍜 Random Món Ăn" },
-          ].map(tab => (
-            <button key={tab.key} className="btn" onClick={() => setActiveTab(tab.key)} style={{
-              background: "none", border: "none",
-              borderBottom: activeTab === tab.key ? "2px solid #e94560" : "2px solid transparent",
-              color: activeTab === tab.key ? "#fff" : "#444",
-              padding: "8px 20px", fontSize: 12, cursor: "pointer",
-              fontWeight: activeTab === tab.key ? 700 : 400,
-              marginBottom: "-1px", transition: "all 0.15s"
-            }}>{tab.label}</button>
-          ))}
-        </div>
+    <main className={styles.page}>
+      <header className={styles.header}>
+        <h1>RANDOM<span>.</span>MEAL</h1>
       </header>
 
-      {/* TAB 1 — RANDOM QUÁN ĂN */}
-      {activeTab === "quan" && (
-      <main style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "32px 20px", gap: 24 }}>
-
-        {/* Location bar */}
-        <div style={{ display: "flex", alignItems: "center", gap: 8, background: "#111115", border: "1px solid #1e1e24", padding: "8px 16px", flexWrap: "wrap", justifyContent: "center" }}>
-          {loading && !spinning ? (
-            <span style={{ fontSize: 11, color: "#444", animation: "pulse 1s infinite" }}>Đang tải quán ăn gần bạn...</span>
-          ) : (
-            <>
-              <span style={{ fontSize: 12 }}>📍</span>
-              <span style={{ fontSize: 11, color: "#888" }}>{areaLabel || "Chưa có vị trí"}</span>
-              <span style={{ fontSize: 9, color: "#2a2a2e" }}>·</span>
-              <span style={{ fontSize: 11, color: "#555" }}>bán kính {RADII.find(r => r.value === radius)?.label}</span>
-              <span style={{ fontSize: 9, color: "#2a2a2e" }}>·</span>
-              <span style={{ fontSize: 11, color: "#444" }}>{available.length} quán</span>
-              <button className="btn" onClick={() => setShowSettings(true)} style={{ background: "none", border: "none", color: "#e94560", fontSize: 10, cursor: "pointer", fontFamily: "inherit" }}>đổi</button>
-            </>
-          )}
-        </div>
-
-        {error && (
-          <div style={{ background: "#1a0a0e", border: "1px solid #e9456033", padding: "10px 16px", fontSize: 11, color: "#e94560", maxWidth: 480, width: "100%", textAlign: "center" }}>{error}</div>
-        )}
-
-        {/* Slot display */}
-        <div style={{ width: "100%", maxWidth: 560, background: "#0d0d10", border: "1px solid #1e1e24", padding: "28px 20px", textAlign: "center", position: "relative" }}>
-          <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 2, background: "linear-gradient(90deg, transparent, #e94560, transparent)" }} />
-          <div style={{ fontSize: 9, color: "#2a2a2e", letterSpacing: "0.3em", textTransform: "uppercase", marginBottom: 16 }}>quán hôm nay</div>
-          <SlotMachine spinning={spinning} result={result?.[0] || null} allRestaurants={available.length > 0 ? available : restaurants} />
-          {!spinning && !result && !loading && (
-            <div style={{ fontSize: 11, color: "#222", marginTop: 8 }}>nhấn để bắt đầu</div>
-          )}
-          {spinning && (
-            <div style={{ fontSize: 9, color: "#e94560", letterSpacing: "0.2em", marginTop: 10, animation: "pulse 0.6s infinite" }}>đang chọn quán...</div>
-          )}
-        </div>
-
-        {/* Spin button */}
-        {!result && (
-          <button className="btn" onClick={handleSpin}
-            disabled={spinning || available.length === 0 || loading}
-            style={{
-              background: (spinning || loading || available.length === 0) ? "#1a0a0e" : "#e94560",
-              border: "none", color: (spinning || loading || available.length === 0) ? "#444" : "#fff",
-              padding: "15px 48px", fontSize: 14,
-              fontFamily: "'Be Vietnam Pro', sans-serif", fontWeight: 700,
-              letterSpacing: "0.05em", cursor: (spinning || loading) ? "default" : "pointer",
-              transition: "all 0.2s",
-              boxShadow: (!spinning && !loading && available.length > 0) ? "0 0 40px rgba(233,69,96,0.25)" : "none"
-            }}>
-            {loading ? "Đang tải..." : spinning ? "Đang quay..." : available.length === 0 ? "Hết quán rồi!" : "🎲 Bắt Đầu Chọn"}
-          </button>
-        )}
-
-        {/* 3 result cards */}
-        {result && !spinning && (
-          <div style={{ width: "100%", maxWidth: 560, display: "flex", flexDirection: "column", gap: 12 }}>
-            <div style={{ fontSize: 9, color: "#444", letterSpacing: "0.2em", textTransform: "uppercase", textAlign: "center" }}>
-              {result.length} gợi ý cho bạn
-            </div>
-            {result.map((r, i) => (
-              <div key={r.id} style={{ position: "relative" }}>
-                {i === 0 && (
-                  <div style={{ position: "absolute", top: -8, left: 16, zIndex: 1, background: "#e94560", color: "#fff", fontSize: 8, padding: "2px 8px", letterSpacing: "0.1em" }}>⭐ GỢI Ý #1</div>
-                )}
-                <ResultCard
-                  restaurant={r}
-                  userLat={userLat} userLng={userLng}
-                  onReroll={() => { setResult(null); setTimeout(handleSpin, 100); }}
-                  onBlacklist={handleBlacklist}
-                />
-              </div>
+      <section className={styles.pickers} aria-label="Chọn nhanh">
+        <div>
+          <div className={styles.label}>Bữa</div>
+          <div className={styles.chips}>
+            {MEALS.options.map(([v, label]) => (
+              <Chip key={v} label={label} state={stateOf("meals", v)} onClick={() => toggle("meals", v)} />
             ))}
-            <button className="btn" onClick={() => { setResult(null); setTimeout(handleSpin, 100); }} style={{
-              background: "transparent", border: "1px solid #1e1e24",
-              color: "#555", padding: "10px", fontSize: 12, cursor: "pointer"
-            }}>↺ Chọn lại 3 quán khác</button>
           </div>
-        )}
-
-        {available.length === 0 && !loading && restaurants.length > 0 && (
-          <div style={{ textAlign: "center", color: "#333" }}>
-            <div style={{ fontSize: 28, marginBottom: 8 }}>😅</div>
-            <div style={{ fontSize: 12 }}>Bạn đã bỏ qua hết quán rồi!</div>
-            <button className="btn" onClick={() => setBlacklist([])} style={{ marginTop: 12, background: "none", border: "1px solid #222", color: "#555", padding: "6px 16px", fontSize: 11, cursor: "pointer" }}>Reset danh sách</button>
-          </div>
-        )}
-      </main>
-      )}
-
-      {/* TAB 2 — RANDOM MÓN ĂN */}
-      {activeTab === "mon" && (
-      <main style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "32px 20px", gap: 24 }}>
-
-        {/* Meal period selector */}
-        <div style={{ display: "flex", gap: 8, alignItems: "center", justifyContent: "center" }}>
-          {Object.entries(MEAL_LABELS).map(([key, label]) => (
-            <button key={key} className="btn" onClick={() => { setSelectedMeal(key); setFoodResult(null); setFoodDisplay("???"); }} style={{
-              background: selectedMeal === key ? "#e9456018" : "#111115",
-              border: selectedMeal === key ? "1px solid #e9456066" : "1px solid #1e1e24",
-              color: selectedMeal === key ? "#e94560" : "#555",
-              padding: "8px 18px", fontSize: 12, cursor: "pointer",
-              fontWeight: selectedMeal === key ? 700 : 400,
-            }}>{label}</button>
-          ))}
         </div>
-
-        {/* Slot display */}
-        <div style={{ width: "100%", maxWidth: 480, background: "#0d0d10", border: "1px solid #1e1e24", padding: "36px 24px", textAlign: "center", position: "relative" }}>
-          <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 2, background: "linear-gradient(90deg, transparent, #e94560, transparent)" }} />
-          <div style={{ fontSize: 9, color: "#2a2a2e", letterSpacing: "0.3em", textTransform: "uppercase", marginBottom: 20 }}>
-            {MEAL_LABELS[selectedMeal]} — món hôm nay
+        <div>
+          <div className={styles.label}>Loại món</div>
+          <div className={styles.chips}>
+            {COURSE.options.map(([v, label]) => (
+              <Chip key={v} label={label} state={stateOf("course", v)} onClick={() => toggle("course", v)} />
+            ))}
           </div>
-
-          {/* Big food name display */}
-          <div style={{
-            fontFamily: "'Be Vietnam Pro', sans-serif",
-            fontSize: foodSpinning ? 24 : (foodResult ? 32 : 28),
-            fontWeight: 800, color: foodSpinning ? "#444" : foodResult ? "#fff" : "#2a2a2e",
-            minHeight: 52, display: "flex", alignItems: "center", justifyContent: "center",
-            transition: "all 0.3s", textAlign: "center", lineHeight: 1.2
-          }}>
-            {foodDisplay}
-          </div>
-
-          {foodSpinning && (
-            <div style={{ fontSize: 9, color: "#e94560", letterSpacing: "0.2em", marginTop: 12, animation: "pulse 0.6s infinite" }}>đang chọn món...</div>
-          )}
-          {!foodSpinning && !foodResult && (
-            <div style={{ fontSize: 11, color: "#222", marginTop: 10 }}>nhấn để bắt đầu</div>
-          )}
         </div>
+        <p className={styles.hint}>Bấm 1 lần để chọn, bấm 2 lần để loại, bấm lần nữa để bỏ chọn. Không chọn gì là lấy tất cả.</p>
+      </section>
 
-        {/* Spin button */}
-        {!foodResult ? (
-          <button className="btn" onClick={handleFoodSpin} disabled={foodSpinning || availableFoods.length === 0} style={{
-            background: (foodSpinning || availableFoods.length === 0) ? "#1a0a0e" : "#e94560",
-            border: "none", color: (foodSpinning || availableFoods.length === 0) ? "#444" : "#fff",
-            padding: "15px 48px", fontSize: 14, fontWeight: 700,
-            cursor: (foodSpinning || availableFoods.length === 0) ? "default" : "pointer",
-            transition: "all 0.2s",
-            boxShadow: (!foodSpinning && availableFoods.length > 0) ? "0 0 40px rgba(233,69,96,0.25)" : "none"
-          }}>
-            {foodSpinning ? "Đang chọn..." : availableFoods.length === 0 ? "Hết món rồi!" : "🎲 Bắt Đầu Chọn"}
-          </button>
+      <section className={styles.stage} aria-live="polite">
+        <div className={styles.stageLabel}>Hôm nay ăn</div>
+        {spinning ? (
+          <div className={`${styles.big} ${styles.spinning}`}>{display ?? "..."}</div>
+        ) : current ? (
+          <>
+            <div className={styles.big}>{current.name}</div>
+            <div className={styles.meta}>{meta(current)}</div>
+            <div className={styles.stageActions}>
+              <button type="button" className={styles.quiet} onClick={() => blockDish(current)}>
+                Không bao giờ ăn món này
+              </button>
+            </div>
+          </>
         ) : (
-          <div style={{ width: "100%", maxWidth: 480, display: "flex", flexDirection: "column", gap: 10 }}>
-            <div style={{ fontSize: 9, color: "#444", letterSpacing: "0.2em", textTransform: "uppercase", textAlign: "center" }}>3 gợi ý cho bạn</div>
-            {foodResult.map((food, i) => (
-              <div key={food} style={{
-                background: i === 0 ? "#1a0a0e" : "#0d0d10",
-                border: i === 0 ? "1px solid #e9456044" : "1px solid #1e1e24",
-                padding: "14px 18px"
-              }}>
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: i === 0 ? 10 : 0 }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                    <div style={{
-                      width: 24, height: 24, borderRadius: "50%",
-                      background: i === 0 ? "#e94560" : "#1e1e24",
-                      display: "flex", alignItems: "center", justifyContent: "center",
-                      fontSize: 10, color: i === 0 ? "#fff" : "#444", fontWeight: 700, flexShrink: 0
-                    }}>{i + 1}</div>
-                    <div>
-                      <span style={{ fontSize: i === 0 ? 18 : 14, fontWeight: i === 0 ? 800 : 500, color: i === 0 ? "#fff" : "#888" }}>{food}</span>
-                      <span style={{ fontSize: 9, color: "#333", marginLeft: 8 }}>{getFoodGroup(food)}</span>
-                    </div>
-                  </div>
-                  {i === 0 && <span style={{ fontSize: 8, color: "#e94560", border: "1px solid #e9456033", padding: "2px 7px" }}>GỢI Ý #1</span>}
-                </div>
-                {i === 0 && (
-                  <div style={{ display: "flex", gap: 8 }}>
-                    <a href={`https://food.grab.com/vn/vi/search?keyword=${encodeURIComponent(food)}`}
-                      target="_blank" rel="noreferrer"
-                      style={{ flex: 1, background: "#0d1a0d", border: "1px solid #00b14f44", color: "#00b14f", padding: "8px", fontSize: 11, fontWeight: 600, textDecoration: "none", display: "flex", alignItems: "center", justifyContent: "center", gap: 5 }}>
-                      🟢 GrabFood
-                    </a>
-                    <a href={`https://shopeefood.vn/search?keyword=${encodeURIComponent(food)}`}
-                      target="_blank" rel="noreferrer"
-                      style={{ flex: 1, background: "#1a0d0a", border: "1px solid #ee4d2d44", color: "#ee4d2d", padding: "8px", fontSize: 11, fontWeight: 600, textDecoration: "none", display: "flex", alignItems: "center", justifyContent: "center", gap: 5 }}>
-                      🟠 ShopeeFood
-                    </a>
-                  </div>
-                )}
-              </div>
-            ))}
-            <button className="btn" onClick={() => { setFoodResult(null); setFoodDisplay("???"); setTimeout(handleFoodSpin, 100); }} style={{
-              background: "transparent", border: "1px solid #1e1e24",
-              color: "#555", padding: "10px", fontSize: 12, cursor: "pointer"
-            }}>↺ Chọn lại 3 món khác</button>
+          <div className={`${styles.big} ${styles.placeholder}`}>Bấm “Quay món” bên dưới</div>
+        )}
+      </section>
+
+      <section className={styles.controls}>
+        <button type="button" className={styles.primary} onClick={spin} disabled={spinning || noneLeft}>
+          {spinning ? "Đang quay..." : noneLeft ? "Không còn món nào" : current ? "Quay lại" : "Quay món"}
+        </button>
+        <div className={styles.controlRow}>
+          <span className={styles.count}>Đang chọn từ <b>{pool.length}</b> món</span>
+          <button type="button" className={styles.secondary} onClick={() => setSheetOpen(true)}>
+            Bộ lọc{activeFilters ? ` (${activeFilters})` : ""}
+          </button>
+        </div>
+        {noneLeft && (
+          <div className={styles.warn}>
+            Không món nào khớp bộ lọc.{" "}
+            <button type="button" className={styles.linkBtn} onClick={clearFilters}>Xóa bộ lọc</button>
+            {blocked.length > 0 && (
+              <> hoặc <button type="button" className={styles.linkBtn} onClick={() => setBlocked([])}>khôi phục {blocked.length} món đã loại</button></>
+            )}
           </div>
         )}
+      </section>
 
-      </main>
-      )}
-
-      {/* ── FOOD FILTER PANEL ── */}
-      {showFoodFilter && (
-        <div onClick={() => setShowFoodFilter(false)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.9)", zIndex: 200, display: "flex", alignItems: "center", justifyContent: "center", padding: 32 }}>
-          <div onClick={e => e.stopPropagation()} style={{ background: "#0d0d10", border: "1px solid #1e1e24", width: "100%", maxWidth: 480, padding: 28, animation: "slideUp 0.2s ease", maxHeight: "85vh", display: "flex", flexDirection: "column" }}>
-            <div style={{ fontSize: 16, fontWeight: 800, marginBottom: 20, color: "#fff" }}>
-              Bỏ Qua Món Ăn<span style={{ color: "#e94560" }}>.</span>
-            </div>
-
-            {/* Block by group */}
-            <div style={{ marginBottom: 18 }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
-                <div style={{ fontSize: 9, color: "#444", letterSpacing: "0.2em", textTransform: "uppercase" }}>BỎ QUA THEO NHÓM</div>
-                {blockedFoodGroups.length > 0 && (
-                  <button className="btn" onClick={() => setBlockedFoodGroups([])} style={{ background: "none", border: "none", color: "#e94560", fontSize: 9, cursor: "pointer" }}>Bỏ hết</button>
-                )}
-              </div>
-              <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-                {Object.keys(FOOD_GROUPS).map(group => {
-                  const blocked = blockedFoodGroups.includes(group);
-                  return (
-                    <button key={group} className="btn" onClick={() => setBlockedFoodGroups(prev => blocked ? prev.filter(g => g !== group) : [...prev, group])} style={{
-                      background: blocked ? "#1a0a0e" : "#111115",
-                      border: blocked ? "1px solid #e9456044" : "1px solid #1e1e24",
-                      color: blocked ? "#e94560" : "#888",
-                      padding: "6px 14px", fontSize: 11, cursor: "pointer",
-                      textDecoration: blocked ? "line-through" : "none"
-                    }}>{group}</button>
-                  );
-                })}
-              </div>
-            </div>
-
-            <div style={{ height: 1, background: "#1a1a1e", marginBottom: 18 }} />
-
-            {/* Block specific foods */}
-            <div style={{ flex: 1, overflow: "hidden", display: "flex", flexDirection: "column" }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
-                <div style={{ fontSize: 9, color: "#444", letterSpacing: "0.2em", textTransform: "uppercase" }}>BỎ QUA MÓN CỤ THỂ ({blockedFoods.length})</div>
-                {blockedFoods.length > 0 && (
-                  <button className="btn" onClick={() => setBlockedFoods([])} style={{ background: "none", border: "none", color: "#e94560", fontSize: 9, cursor: "pointer" }}>Bỏ hết</button>
-                )}
-              </div>
-
-              {/* Group foods by category for easier browsing */}
-              <div style={{ overflowY: "auto", display: "flex", flexDirection: "column", gap: 12 }}>
-                {Object.entries(FOOD_GROUPS).map(([group, items]) => {
-                  const mealFoods = items.filter(f => FOODS[selectedMeal].includes(f));
-                  if (mealFoods.length === 0) return null;
-                  return (
-                    <div key={group}>
-                      <div style={{ fontSize: 9, color: "#333", letterSpacing: "0.15em", marginBottom: 6 }}>{group}</div>
-                      <div style={{ display: "flex", flexWrap: "wrap", gap: 5 }}>
-                        {mealFoods.map(food => {
-                          const blocked = blockedFoods.includes(food);
-                          return (
-                            <button key={food} className="btn" onClick={() => setBlockedFoods(prev => blocked ? prev.filter(f => f !== food) : [...prev, food])} style={{
-                              background: blocked ? "#1a0a0e" : "#111115",
-                              border: blocked ? "1px solid #e9456033" : "1px solid #1a1a1e",
-                              color: blocked ? "#e94560" : "#666",
-                              padding: "4px 10px", fontSize: 10, cursor: "pointer",
-                              textDecoration: blocked ? "line-through" : "none"
-                            }}>{food}</button>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-
-            <div style={{ marginTop: 14, paddingTop: 12, borderTop: "1px solid #1a1a1e", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <span style={{ fontSize: 11, color: "#444" }}>{availableFoods.length} món sẽ được random</span>
-              <button className="btn" onClick={() => setShowFoodFilter(false)} style={{ background: "#e94560", border: "none", color: "#fff", padding: "8px 20px", fontSize: 11, cursor: "pointer", fontWeight: 600 }}>Xong</button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* SETTINGS */}
-      {showSettings && (
-        <div onClick={() => setShowSettings(false)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.9)", zIndex: 200, display: "flex", alignItems: "center", justifyContent: "center", padding: 32 }}>
-          <div onClick={e => e.stopPropagation()} style={{ background: "#0d0d10", border: "1px solid #1e1e24", width: "100%", maxWidth: 400, padding: 28, animation: "slideUp 0.2s ease" }}>
-            <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 16, fontWeight: 800, marginBottom: 22, color: "#fff" }}>Khu vực<span style={{ color: "#e94560" }}>.</span></div>
-
-            <button className="btn" onClick={() => { getLocation(); setShowSettings(false); }} style={{ width: "100%", background: "#111115", border: "1px solid #1e1e24", color: "#888", padding: "10px", fontSize: 12, fontFamily: "inherit", cursor: "pointer", marginBottom: 16, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
-              📍 Dùng vị trí GPS hiện tại
-            </button>
-
-            <div style={{ marginBottom: 16 }}>
-              <div style={{ fontSize: 9, color: "#444", letterSpacing: "0.2em", marginBottom: 8 }}>HOẶC NHẬP ĐỊA CHỈ</div>
-              <div style={{ display: "flex", gap: 8 }}>
-                <input value={customAddress} onChange={e => setCustomAddress(e.target.value)}
-                  onKeyDown={e => e.key === "Enter" && geocodeAddress()}
-                  placeholder="VD: 123 Nguyễn Huệ, Quận 1"
-                  style={{ flex: 1, background: "#111115", border: "1px solid #1e1e24", color: "#e8e8e8", padding: "9px 12px", fontSize: 12, fontFamily: "inherit", outline: "none" }} />
-                <button className="btn" onClick={geocodeAddress} disabled={geocoding} style={{ background: "#e94560", border: "none", color: "#fff", padding: "9px 14px", fontSize: 11, fontFamily: "inherit", cursor: "pointer" }}>
-                  {geocoding ? "..." : "Tìm"}
+      {alts.length > 0 && !spinning && (
+        <section aria-label="Gợi ý khác">
+          <div className={styles.label}>Hoặc thử</div>
+          <div className={styles.alts}>
+            {alts.map(d => (
+              <div key={d.name} className={styles.alt}>
+                <button type="button" className={styles.altMain} onClick={() => promote(d)} aria-label={`Chọn ${d.name}`}>
+                  <span className={styles.altName}>{d.name}</span>
+                  <span className={styles.altMeta}>{meta(d)}</span>
                 </button>
+                <button type="button" className={styles.altX} onClick={() => blockDish(d)} aria-label={`Không bao giờ ăn ${d.name}`} title="Không bao giờ ăn món này">✕</button>
               </div>
-            </div>
-
-            <div style={{ marginBottom: 24 }}>
-              <div style={{ fontSize: 9, color: "#444", letterSpacing: "0.2em", marginBottom: 8 }}>BÁN KÍNH</div>
-              <div style={{ display: "flex", gap: 8 }}>
-                {RADII.map(r => (
-                  <button key={r.value} className="btn" onClick={() => {
-                    setRadius(r.value);
-                    if (userLat) loadRestaurants(userLat, userLng, r.value);
-                  }} style={{
-                    flex: 1, background: radius === r.value ? "#e9456018" : "transparent",
-                    border: radius === r.value ? "1px solid #e9456044" : "1px solid #1e1e24",
-                    color: radius === r.value ? "#e94560" : "#555",
-                    padding: "8px", fontSize: 12, fontFamily: "inherit", cursor: "pointer"
-                  }}>{r.label}</button>
-                ))}
-              </div>
-            </div>
-
-            <button className="btn" onClick={() => setShowSettings(false)} style={{ width: "100%", background: "#e94560", border: "none", color: "#fff", padding: "10px", fontSize: 12, fontFamily: "inherit", cursor: "pointer", fontWeight: 600 }}>Xong</button>
+            ))}
           </div>
-        </div>
+        </section>
       )}
 
-      {/* HISTORY */}
-      {showHistory && (
-        <div onClick={() => setShowHistory(false)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.9)", zIndex: 200, display: "flex", alignItems: "center", justifyContent: "center", padding: 32 }}>
-          <div onClick={e => e.stopPropagation()} style={{ background: "#0d0d10", border: "1px solid #1e1e24", width: "100%", maxWidth: 400, padding: 28, animation: "slideUp 0.2s ease", maxHeight: "75vh", display: "flex", flexDirection: "column" }}>
-            <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 16, fontWeight: 800, marginBottom: 18, color: "#fff" }}>Lịch sử<span style={{ color: "#e94560" }}>.</span></div>
-            {history.length === 0
-              ? <div style={{ color: "#2a2a2e", fontSize: 12, textAlign: "center", padding: "40px 0" }}>Chưa có lịch sử</div>
-              : <div style={{ overflowY: "auto", display: "flex", flexDirection: "column", gap: 8 }}>
-                {history.map((r, i) => (
-                  <div key={i} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 12px", background: "#111115", border: "1px solid #1a1a1e" }}>
-                    {r.photo
-                      ? <img src={r.photo} alt="" style={{ width: 40, height: 40, objectFit: "cover", flexShrink: 0 }} onError={e => e.target.style.display = "none"} />
-                      : <div style={{ width: 40, height: 40, background: "#1a1a1e", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, flexShrink: 0 }}>🍜</div>
-                    }
-                    <div style={{ flex: 1 }}>
-                      <div style={{ fontSize: 13, color: "#e8e8e8" }}>{r.name}</div>
-                      <div style={{ fontSize: 9, color: "#444", marginTop: 2 }}>{r.type}</div>
-                    </div>
-                    <div style={{ fontSize: 9, color: "#2a2a2e" }}>{r.time}</div>
-                  </div>
-                ))}
-              </div>
-            }
-            <button className="btn" onClick={() => setShowHistory(false)} style={{ marginTop: 14, background: "none", border: "1px solid #1e1e24", color: "#555", padding: "8px", fontSize: 11, fontFamily: "inherit", cursor: "pointer" }}>Đóng</button>
+      {sheetOpen && (
+        <FilterSheet onClose={closeSheet} title="Bộ lọc">
+          <div className={styles.sheetHead}>
+            <h2>Bộ lọc</h2>
+            <button type="button" className={styles.quiet} onClick={closeSheet}>Đóng</button>
           </div>
-        </div>
-      )}
-
-      {/* BLACKLIST */}
-      {showBlacklist && (
-        <div onClick={() => setShowBlacklist(false)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.9)", zIndex: 200, display: "flex", alignItems: "center", justifyContent: "center", padding: 32 }}>
-          <div onClick={e => e.stopPropagation()} style={{ background: "#0d0d10", border: "1px solid #1e1e24", width: "100%", maxWidth: 400, padding: 28, animation: "slideUp 0.2s ease", maxHeight: "75vh", display: "flex", flexDirection: "column" }}>
-            <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 16, fontWeight: 800, marginBottom: 18, color: "#fff" }}>Bỏ qua<span style={{ color: "#e94560" }}>.</span></div>
-            {blacklist.length === 0
-              ? <div style={{ color: "#2a2a2e", fontSize: 12, textAlign: "center", padding: "40px 0" }}>Chưa bỏ qua quán nào</div>
-              : <div style={{ overflowY: "auto", display: "flex", flexDirection: "column", gap: 8 }}>
-                {restaurants.filter(r => blacklist.includes(r.id)).map(r => (
-                  <div key={r.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 12px", background: "#111115", border: "1px solid #1a1a1e" }}>
-                    <div style={{ flex: 1 }}>
-                      <div style={{ fontSize: 13, color: "#555" }}>{r.name}</div>
-                      <div style={{ fontSize: 9, color: "#333", marginTop: 2 }}>{r.address}</div>
-                    </div>
-                    <button className="btn" onClick={() => setBlacklist(prev => prev.filter(b => b !== r.id))} style={{ background: "none", border: "1px solid #2a2a2e", color: "#666", padding: "4px 10px", fontSize: 10, fontFamily: "inherit", cursor: "pointer" }}>Bỏ chặn</button>
-                  </div>
-                ))}
-              </div>
-            }
-            <div style={{ display: "flex", gap: 8, marginTop: 14 }}>
-              {blacklist.length > 0 && <button className="btn" onClick={() => setBlacklist([])} style={{ flex: 1, background: "none", border: "1px solid #2a2a2e", color: "#555", padding: "8px", fontSize: 11, fontFamily: "inherit", cursor: "pointer" }}>Reset tất cả</button>}
-              <button className="btn" onClick={() => setShowBlacklist(false)} style={{ flex: 1, background: "none", border: "1px solid #1e1e24", color: "#444", padding: "8px", fontSize: 11, fontFamily: "inherit", cursor: "pointer" }}>Đóng</button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ── DANH SÁCH BỎ QUA PANEL ── */}
-      {showFilter && (
-        <div onClick={() => setShowFilter(false)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.9)", zIndex: 200, display: "flex", alignItems: "center", justifyContent: "center", padding: 32 }}>
-          <div onClick={e => e.stopPropagation()} style={{ background: "#0d0d10", border: "1px solid #1e1e24", width: "100%", maxWidth: 440, padding: 28, animation: "slideUp 0.2s ease", maxHeight: "85vh", display: "flex", flexDirection: "column" }}>
-            <div style={{ fontSize: 16, fontWeight: 800, marginBottom: 20, color: "#fff" }}>
-              Danh Sách Bỏ Qua<span style={{ color: "#e94560" }}>.</span>
+          <div className={styles.sheetBody}>
+            <div className={styles.legend}>
+              <span className={styles.l1}><b>✓</b> bấm 1 lần: chỉ lấy</span>
+              <span className={styles.l2}><b>✕</b> bấm 2 lần: loại bỏ</span>
+              <span>bấm 3 lần: bỏ chọn</span>
             </div>
 
-            {/* Loại ẩm thực */}
-            <div style={{ marginBottom: 16 }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-                <div style={{ fontSize: 9, color: "#444", letterSpacing: "0.2em", textTransform: "uppercase" }}>LOẠI ẨM THỰC</div>
-                {blockedTypes.length > 0 && (
-                  <button className="btn" onClick={() => setBlockedTypes([])} style={{ background: "none", border: "none", color: "#e94560", fontSize: 9, cursor: "pointer" }}>Bỏ hết</button>
-                )}
-              </div>
-              {allTypes.length === 0
-                ? <div style={{ fontSize: 11, color: "#333" }}>Tải quán trước để xem loại ẩm thực</div>
-                : <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-                  {allTypes.map(t => {
-                    const blocked = blockedTypes.includes(t);
-                    return (
-                      <button key={t} className="btn" onClick={() => setBlockedTypes(prev => blocked ? prev.filter(x => x !== t) : [...prev, t])} style={{
-                        background: blocked ? "#1a0a0e" : "#111115",
-                        border: blocked ? "1px solid #e9456044" : "1px solid #1e1e24",
-                        color: blocked ? "#e94560" : "#888",
-                        padding: "5px 12px", fontSize: 11, cursor: "pointer",
-                        textDecoration: blocked ? "line-through" : "none"
-                      }}>{t}</button>
-                    );
-                  })}
+            {SHEET_GROUPS.map(g => (
+              <div key={g.key}>
+                <div className={styles.label}>{g.label}</div>
+                <div className={styles.chips}>
+                  {g.options.map(([v, label]) => (
+                    <Chip key={v} label={label} state={stateOf(g.key, v)} onClick={() => toggle(g.key, v)} />
+                  ))}
                 </div>
-              }
-            </div>
-
-            <div style={{ height: 1, background: "#1a1a1e", marginBottom: 16 }} />
-
-            {/* Quán cụ thể */}
-            <div style={{ flex: 1, overflow: "hidden", display: "flex", flexDirection: "column" }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-                <div style={{ fontSize: 9, color: "#444", letterSpacing: "0.2em", textTransform: "uppercase" }}>
-                  QUÁN CỤ THỂ ({blacklist.length} bỏ qua)
-                </div>
-                <div style={{ display: "flex", gap: 8 }}>
-                  {blacklist.length > 0 && (
-                    <button className="btn" onClick={() => setBlacklist([])} style={{ background: "none", border: "none", color: "#e94560", fontSize: 9, cursor: "pointer" }}>Bỏ hết</button>
-                  )}
-                  <button className="btn" onClick={() => setShowAddManual(true)} style={{ background: "none", border: "1px solid #e9456044", color: "#e94560", fontSize: 9, cursor: "pointer", padding: "2px 8px" }}>+ Thêm quán</button>
-                </div>
-              </div>
-              <div style={{ overflowY: "auto", display: "flex", flexDirection: "column", gap: 6 }}>
-                {allRestaurants.length === 0
-                  ? <div style={{ fontSize: 11, color: "#333" }}>Tải quán trước</div>
-                  : allRestaurants.map(r => {
-                    const blocked = blacklist.includes(r.id);
-                    return (
-                      <div key={r.id} onClick={() => setBlacklist(prev => blocked ? prev.filter(x => x !== r.id) : [...prev, r.id])}
-                        style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 12px", background: blocked ? "#1a0a0e" : "#111115", border: blocked ? "1px solid #e9456022" : "1px solid #1a1a1e", cursor: "pointer" }}>
-                        <div style={{ width: 18, height: 18, border: `1px solid ${blocked ? "#e94560" : "#333"}`, background: blocked ? "#e94560" : "transparent", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, fontSize: 10 }}>
-                          {blocked ? "✕" : ""}
-                        </div>
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                            <div style={{ fontSize: 12, color: blocked ? "#666" : "#e8e8e8", textDecoration: blocked ? "line-through" : "none" }}>{r.name}</div>
-                            {r.isManual && <span style={{ fontSize: 8, color: "#f97316", border: "1px solid #f9731633", padding: "1px 5px" }}>thủ công</span>}
-                          </div>
-                          <div style={{ fontSize: 9, color: "#333", marginTop: 1 }}>{r.type}</div>
-                        </div>
-                        {r.isManual && (
-                          <button onClick={e => { e.stopPropagation(); setManualRestaurants(prev => prev.filter(m => m.id !== r.id)); }} style={{ background: "none", border: "none", color: "#333", cursor: "pointer", fontSize: 14, padding: "0 4px" }}>🗑</button>
-                        )}
-                      </div>
-                    );
-                  })
-                }
-              </div>
-            </div>
-
-            <div style={{ marginTop: 14, paddingTop: 12, borderTop: "1px solid #1a1a1e", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <span style={{ fontSize: 11, color: "#444" }}>{available.length} quán sẽ được random</span>
-              <button className="btn" onClick={() => setShowFilter(false)} style={{ background: "#e94560", border: "none", color: "#fff", padding: "8px 20px", fontSize: 11, cursor: "pointer", fontWeight: 600 }}>Xong</button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ── THÊM QUÁN THỦ CÔNG ── */}
-      {showAddManual && (
-        <div onClick={() => setShowAddManual(false)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.92)", zIndex: 300, display: "flex", alignItems: "center", justifyContent: "center", padding: 32 }}>
-          <div onClick={e => e.stopPropagation()} style={{ background: "#0d0d10", border: "1px solid #1e1e24", width: "100%", maxWidth: 380, padding: 28, animation: "slideUp 0.2s ease" }}>
-            <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 20, color: "#fff" }}>
-              Thêm quán<span style={{ color: "#e94560" }}>.</span>
-            </div>
-
-            {[
-              { label: "TÊN QUÁN *", value: manualName, set: setManualName, placeholder: "VD: Phở Hà Nội" },
-              { label: "ĐỊA CHỈ", value: manualAddress, set: setManualAddress, placeholder: "VD: 12 Lê Lợi, Quận 1" },
-            ].map(({ label, value, set, placeholder }) => (
-              <div key={label} style={{ marginBottom: 14 }}>
-                <div style={{ fontSize: 9, color: "#444", letterSpacing: "0.2em", marginBottom: 6 }}>{label}</div>
-                <input value={value} onChange={e => set(e.target.value)} placeholder={placeholder}
-                  style={{ width: "100%", background: "#111115", border: "1px solid #1e1e24", color: "#e8e8e8", padding: "9px 12px", fontSize: 12, outline: "none" }} />
               </div>
             ))}
 
-            <div style={{ marginBottom: 20 }}>
-              <div style={{ fontSize: 9, color: "#444", letterSpacing: "0.2em", marginBottom: 6 }}>LOẠI</div>
-              <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-                {["Quán ăn", "Phở", "Bún", "Cơm", "Bánh mì", "Cafe", "Lẩu", "Khác"].map(t => (
-                  <button key={t} className="btn" onClick={() => setManualType(t)} style={{
-                    background: manualType === t ? "#e9456018" : "transparent",
-                    border: manualType === t ? "1px solid #e9456044" : "1px solid #1e1e24",
-                    color: manualType === t ? "#e94560" : "#555",
-                    padding: "4px 10px", fontSize: 11, cursor: "pointer"
-                  }}>{t}</button>
-                ))}
-              </div>
+            <div>
+              <label className={styles.toggle}>
+                <input type="checkbox" checked={showForeign} onChange={e => setShowForeign(e.target.checked)} />
+                Cả món nước ngoài
+              </label>
+              {showForeign && (
+                <div className={styles.chips} style={{ marginTop: "var(--sp-2)" }}>
+                  {FOREIGN_ORIGINS.map(([v, label]) => (
+                    <Chip key={v} label={label} state={stateOf("origin", v)} onClick={() => toggle("origin", v)} />
+                  ))}
+                </div>
+              )}
+              <label className={styles.toggle}>
+                <input type="checkbox" checked={avoidRecent} onChange={e => setAvoidRecent(e.target.checked)} />
+                Tránh {RECENT_KEEP} món vừa quay
+              </label>
             </div>
 
-            <div style={{ display: "flex", gap: 8 }}>
-              <button className="btn" onClick={() => setShowAddManual(false)} style={{ flex: 1, background: "none", border: "1px solid #1e1e24", color: "#555", padding: "9px", fontSize: 11, cursor: "pointer" }}>Huỷ</button>
-              <button className="btn" onClick={handleAddManual} disabled={!manualName.trim()} style={{ flex: 2, background: manualName.trim() ? "#e94560" : "#1e1a1a", border: "none", color: manualName.trim() ? "#fff" : "#444", padding: "9px", fontSize: 11, cursor: "pointer", fontWeight: 600 }}>Thêm vào danh sách</button>
+            <div>
+              <div className={styles.label}>Loại một món theo tên</div>
+              <input
+                className={styles.search} type="search" value={query} placeholder="Gõ tên món, ví dụ: chè"
+                onChange={e => setQuery(e.target.value)} aria-label="Tìm món để loại"
+              />
+              {matches.length > 0 && (
+                <div className={styles.chips} style={{ marginTop: "var(--sp-2)" }}>
+                  {matches.map(d => (
+                    <Chip
+                      key={d.name} label={d.name} state={blocked.includes(d.name) ? "exc" : "off"}
+                      onClick={() => setBlocked(b => (b.includes(d.name) ? b.filter(n => n !== d.name) : [...b, d.name]))}
+                    />
+                  ))}
+                </div>
+              )}
+              {blocked.length > 0 && (
+                <p className={styles.hint} style={{ marginTop: "var(--sp-2)" }}>
+                  Đã loại {blocked.length} món.{" "}
+                  <button type="button" className={styles.linkBtn} onClick={() => setBlocked([])}>Khôi phục tất cả</button>
+                </p>
+              )}
             </div>
           </div>
-        </div>
+          <div className={styles.sheetFoot}>
+            {activeFilters > 0 && (
+              <button type="button" className={styles.secondary} onClick={clearFilters}>Xóa bộ lọc</button>
+            )}
+            <button type="button" className={styles.primary} onClick={closeSheet}>
+              Xong · còn {pool.length} món
+            </button>
+          </div>
+        </FilterSheet>
       )}
-
-    </div>
+    </main>
   );
 }
